@@ -1,0 +1,35 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# PyCharm
+.idea/
+
+# YOLO модели
+*.pt
+*.pth
+*.onnx
+
+# Dataset-и
+dataset/
+datasets/
+
+# Резултати от обучение
+runs/
+
+# Кеш
+*.cache
+
+# Секретни настройки
+.env
+.env.*
+!.env.example
+
+# Логове
+*.log
+
+# FAISS индекси
+*.faiss
+*.index
