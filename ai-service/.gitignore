@@ -7,29 +7,29 @@ __pycache__/
 # PyCharm
 .idea/
 
-# YOLO модели
+# YOLO models
 *.pt
 *.pth
 *.onnx
 
-# Dataset-и
+# Datasets
 dataset/
 datasets/
 
-# Резултати от обучение
+# Train results
 runs/
 
-# Кеш
+# Generated YOLO crops
+crops/
+
 *.cache
 
-# Секретни настройки
 .env
 .env.*
 !.env.example
 
-# Логове
 *.log
 
-# FAISS индекси
+# FAISS indexes
 *.faiss
 *.index
