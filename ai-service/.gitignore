@@ -33,3 +33,9 @@ crops/
 # FAISS indexes
 *.faiss
 *.index
+
+# Local product reference images; keep the catalog folder structure
+/dinov2-service/catalog/*
+!/dinov2-service/catalog/*/
+/dinov2-service/catalog/*/**
+!/dinov2-service/catalog/*/.gitkeep

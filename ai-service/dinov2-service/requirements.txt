@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+torch
+torchvision
+transformers>=4.36,<5
+pillow
+faiss-cpu
+numpy
