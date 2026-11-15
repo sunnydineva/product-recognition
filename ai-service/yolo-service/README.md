@@ -1,6 +1,7 @@
 ## Product Enrollment
 
-The YOLO service includes a product enrollment workflow that allows users to register new products using a mobile phone camera.
+The YOLO service includes a product enrollment workflow that allows users to register new products using a mobile phone
+camera.
 
 ### Architecture
 
@@ -31,8 +32,11 @@ flowchart LR
 
 The YOLO service detects and tracks objects in images and videos using YOLO11s and ByteTrack.
 
-Its primary purpose is to locate products at the checkout, extract product crops, and eventually send them to DINOv2 for recognition.
+Its primary purpose is to locate products at the checkout, extract product crops, and eventually send them to DINOv2 for
+recognition.
+
 ### Detection and Tracking Pipeline
+
 ```mermaid
 flowchart LR
     A["Image / Video"] --> B["YOLO11s"]
@@ -49,36 +53,37 @@ flowchart LR
 
 The enrollment functionality is implemented in the `enrollment/` package:
 
-| File | Responsibility |
-|---|---|
-| `api.py` | FastAPI endpoints for detection and tracking |
-| `detection/crop.py` | Extract object crops from bounding boxes |
-| `detection/best_crop.py` | Save the best-quality crop for each tracked object |
-| `routes.py` | FastAPI endpoints for preview and approval |
-| `video.py` | Extract frames from uploaded videos |
-| `localization.py` | Locate and crop products using OpenCV |
-| `selection.py` | Score crops and select diverse images |
-| `sessions.py` | Manage temporary enrollment sessions |
-| `encoding.py` | Convert selected images into DINOv2 embeddings, if added |
-| `static/enroll.html` | Mobile-friendly enrollment interface |
-| `static/enroll.js` | Camera recording, preview, selection and approval |
+| File                     | Responsibility                                           |
+|--------------------------|----------------------------------------------------------|
+| `api.py`                 | FastAPI endpoints for detection and tracking             |
+| `detection/crop.py`      | Extract object crops from bounding boxes                 |
+| `detection/best_crop.py` | Save the best-quality crop for each tracked object       |
+| `routes.py`              | FastAPI endpoints for preview and approval               |
+| `video.py`               | Extract frames from uploaded videos                      |
+| `localization.py`        | Locate and crop products using OpenCV                    |
+| `selection.py`           | Score crops and select diverse images                    |
+| `sessions.py`            | Manage temporary enrollment sessions                     |
+| `encoding.py`            | Convert selected images into DINOv2 embeddings, if added |
+| `static/enroll.html`     | Mobile-friendly enrollment interface                     |
+| `static/enroll.js`       | Camera recording, preview, selection and approval        |
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/enroll` | Open the enrollment interface |
-| POST | `/api/products/preview` | Process video and return selected product crops |
-| POST | `/api/products/approve` | Validate selected images against the enrollment session |
-| POST | `/detect` | Detect objects in a single image |
-| POST | `/track` | Track objects and extract crops from an image |
-| POST | `/track-video` | Track objects in video and save the best crop per track |
-| GET | `/health` | Check service health |
-| GET | `/yolo-names` | Return YOLO model class names |
+| Method | Endpoint                | Description                                             |
+|--------|-------------------------|---------------------------------------------------------|
+| GET    | `/enroll`               | Open the enrollment interface                           |
+| POST   | `/api/products/preview` | Process video and return selected product crops         |
+| POST   | `/api/products/approve` | Validate selected images against the enrollment session |
+| POST   | `/detect`               | Detect objects in a single image                        |
+| POST   | `/track`                | Track objects and extract crops from an image           |
+| POST   | `/track-video`          | Track objects in video and save the best crop per track |
+| GET    | `/health`               | Check service health                                    |
+| GET    | `/yolo-names`           | Return YOLO model class names                           |
 
 ### Current Status
 
 **Implemented:**
+
 - YOLO11s object detection
 - ByteTrack object tracking
 - Bounding box extraction
@@ -86,17 +91,19 @@ The enrollment functionality is implemented in the `enrollment/` package:
 - Best-crop selection per tracked object in uploaded videos
 
 **Planned:**
+
 - Send selected product crops to DINOv2
 - Search stored embeddings using pgvector
 - Resolve recognized products to SKU
 - Integrate recognition results with the Java backend
 
-Temporary enrollment sessions expire after 30 minutes. Session metadata is currently stored in process memory, so sessions do not survive an application restart.
-
+Temporary enrollment sessions expire after 30 minutes. Session metadata is currently stored in process memory, so
+sessions do not survive an application restart.
 
 ## Product Enrollment
 
-The YOLO service includes a product enrollment workflow that allows users to register new products using a mobile phone camera.
+The YOLO service includes a product enrollment workflow that allows users to register new products using a mobile phone
+camera.
 
 ### Enrollment Pipeline
 
@@ -115,24 +122,40 @@ flowchart LR
 
 The enrollment functionality is implemented in the `enrollment/` package:
 
-| File | Responsibility |
-|---|---|
-| `routes.py` | FastAPI endpoints for preview and approval |
-| `video.py` | Extract frames from uploaded videos |
-| `localization.py` | Locate and crop products using OpenCV |
-| `selection.py` | Score crops and select diverse images |
-| `sessions.py` | Manage temporary enrollment sessions |
-| `encoding.py` | Convert selected images into DINOv2 embeddings (planned integration) |
-| `static/enroll.html` | Mobile-friendly enrollment interface |
-| `static/enroll.js` | Camera recording, preview, selection and approval |
+| File                 | Responsibility                                                       |
+|----------------------|----------------------------------------------------------------------|
+| `routes.py`          | FastAPI endpoints for preview and approval                           |
+| `video.py`           | Extract frames from uploaded videos                                  |
+| `localization.py`    | Locate and crop products using OpenCV                                |
+| `selection.py`       | Score crops and select diverse images                                |
+| `sessions.py`        | Manage temporary enrollment sessions                                 |
+| `encoding.py`        | Convert selected images into DINOv2 embeddings (planned integration) |
+| `static/enroll.html` | Mobile-friendly enrollment interface                                 |
+| `static/enroll.js`   | Camera recording, preview, selection and approval                    |
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/enroll` | Open the enrollment interface |
-| POST | `/api/products/preview` | Process video and return selected product crops |
-| POST | `/api/products/approve` | Validate selected images against the enrollment session |
+| Method | Endpoint                | Description                                             |
+|--------|-------------------------|---------------------------------------------------------|
+| GET    | `/enroll`               | Open the enrollment interface                           |
+| POST   | `/api/products/preview` | Process video and return selected product crops         |
+| POST   | `/api/products/approve` | Validate selected images against the enrollment session |
+
+## Live Camera — YOLO + ByteTrack
+
+Run real-time object detection and tracking using a connected webcam.
+
+From the `yolo-service` directory:
+
+```bash
+../.venv/bin/yolo track model=models/yolo11s.pt source=0 tracker=bytetrack.yaml show=True
+```
+
+**Note:** Close browser tabs or applications using the webcam before starting YOLO. If the camera is busy, OpenCV may
+fail to open `/dev/video0`.
+
+This command runs YOLO tracking directly from the terminal. Product SKU recognition through DINOv2 is not yet integrated
+into this live camera workflow.
 
 ### Model Training
 
@@ -173,7 +196,8 @@ The prediction output includes detected product classes, bounding boxes, and con
 
 The initial model was trained using a very small dataset and is intended for technical validation.
 
-Additional annotated images and testing on unseen products are required before using the model in a production warehouse environment.
+Additional annotated images and testing on unseen products are required before using the model in a production warehouse
+environment.
 
 ### Current Status
 
@@ -209,4 +233,5 @@ Enrollment previews are stored in temporary sessions.
 - Session metadata is currently stored in process memory.
 - Sessions do not survive an application restart.
 
-Currently, the approval endpoint validates the selected images but does not yet save products or embeddings to the database.
+Currently, the approval endpoint validates the selected images but does not yet save products or embeddings to the
+database.
