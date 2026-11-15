@@ -1,0 +1,14 @@
+tunnel: ff0b1268-9018-4c25-bdb4-2e6578baf617
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # Recognition goes to DINOv2
+  - hostname: ai-product-recognition.my-expenses.xyz
+    path: ^/recognize$
+    service: http://127.0.0.1:18102
+
+  # Enrollment goes to YOLO
+  - hostname: ai-product-recognition.my-expenses.xyz
+    service: http://127.0.0.1:18101
+
+  - service: http_status:404

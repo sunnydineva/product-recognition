@@ -29,5 +29,16 @@ services:
     command: migrate
     restart: "no"
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: ai-product-recognition-cloudflared
+    restart: unless-stopped
+    network_mode: host
+    user: "${UID:-1000}:${GID:-1000}"
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+      - ${CLOUDFLARED_CREDENTIALS_FILE}:/etc/cloudflared/credentials.json:ro
+      
 volumes:
   postgres_data:
