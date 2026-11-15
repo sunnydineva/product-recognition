@@ -36,4 +36,5 @@ class BestCropSaver:
         os.makedirs(track_folder, exist_ok=True)
 
         filename = os.path.join(track_folder, "best.jpg")
-        cv2.imwrite(filename, crop)
+        if cv2.imwrite(filename, crop):
+            return filename

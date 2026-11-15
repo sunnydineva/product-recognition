@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <title>Product Enrollment</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 16px;
+        }
+
+        video {
+            width: 100%;
+            background: black;
+            border-radius: 12px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 12px;
+            box-sizing: border-box;
+        }
+
+        button {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Добавяне на продукт</h2>
+
+    <label for="sku">Баркод / SKU</label>
+    <input
+        id="sku"
+        type="text"
+        placeholder="Сканирай или въведи баркод"
+        autocomplete="off"
+    >
+
+    <video
+        id="camera"
+        autoplay
+        muted
+        playsinline
+    ></video>
+
+    <button id="startCamera">Отвори камерата</button>
+    <button id="record" disabled>Запиши 12 секунди</button>
+
+    <p id="status"></p>
+
+    <h3>Открити продукти</h3>
+    <div id="previewImages"></div>
+
+    <div id="previewActions" hidden>
+        <button id="retryRecording" type="button">
+            Повтори записа
+        </button>
+
+        <button id="approveImages" type="button">
+            Одобри избраните
+        </button>
+    </div>
+
+    <script src="/enroll.js"></script>
+</body>
+</html>

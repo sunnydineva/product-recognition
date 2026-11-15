@@ -2,12 +2,14 @@ from fastapi import FastAPI, UploadFile, HTTPException
 from ultralytics import YOLO
 import numpy as np
 import cv2
+from enrollment.routes import router as enrollment_router
 from detection.crop import crop_object
-from detection.best_crop import BestCropSaver
+from detection.best_crop import BestCropSaver #нова функционалност трябва да избира до 10 различни качествени изображения, затова не трябва директно да използва същата логика за избор и запис.
 import os
 import tempfile
 
 app = FastAPI()
+app.include_router(enrollment_router)
 
 modelYolo = YOLO("models/yolo11s.pt")
 
