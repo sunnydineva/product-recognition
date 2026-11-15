@@ -2,30 +2,27 @@ import os
 import tempfile
 import base64
 import cv2
-import httpx
 
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from fastapi.responses import FileResponse
 
 from enrollment.localization import localize_product
+from enrollment.sessions import create_preview_session
 from enrollment.selection import CropCandidate, select_best_crops
-from enrollment.sessions import (
-    create_preview_session,
-    get_selected_images,
-    SessionNotFound,
-    SessionExpired,
-    InvalidImageSelection,
-)
-from enrollment.dinov2_client import encode_image
-from enrollment.sessions import get_preview_session, SessionError
-
 from enrollment.video import (
     extract_frames,
     VideoProcessingError,
 )
+from enrollment.approval import (
+    load_approved_images,
+    generate_embeddings,
+    build_approval_response,
+)
+from enrollment.database import save_product_embeddings
 
 router = APIRouter()
 
@@ -195,58 +192,27 @@ async def preview_product(
 
 @router.post("/api/products/approve")
 async def approve_product_images(request: ApproveImagesRequest):
+    session, images = load_approved_images(
+        request.session_id,
+        request.image_ids,
+    )
+
+    embeddings = await generate_embeddings(images)
+
     try:
-        session = get_preview_session(request.session_id)
-
-        images = get_selected_images(
-            request.session_id,
-            request.image_ids,
+        await run_in_threadpool(
+            save_product_embeddings,
+            session.sku,
+            embeddings,
         )
-
-    except (SessionNotFound, SessionExpired) as exc:
-        raise HTTPException(
-            status_code=404,
-            detail="Preview session not found or expired",
-        ) from exc
-
-    except InvalidImageSelection as exc:
-        raise HTTPException(
-            status_code=422,
-            detail=str(exc),
-        ) from exc
-
-    except SessionError as exc:
+    except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail=str(exc),
+            detail="Failed to save product embeddings to PostgreSQL",
         ) from exc
 
-    embeddings = []
-
-    try:
-        for image in images:
-            embedding = await encode_image(image.path)
-
-            embeddings.append(
-                {
-                    "image_id": image.image_id,
-                    "embedding_dimension": len(embedding),
-                }
-            )
-
-    except (httpx.HTTPError, OSError, ValueError, KeyError) as exc:
-        raise HTTPException(
-            status_code=502,
-            detail="Failed to generate DINOv2 embeddings",
-        ) from exc
-
-    # Embeddings were generated successfully but are not persisted yet.
-    # TODO: Save SKU and embeddings to PostgreSQL + pgvector.
-    return {
-        "status": "encoded",
-        "sku": session.sku,
-        "session_id": request.session_id,
-        "approved_count": len(embeddings),
-        "embeddings": embeddings,
-        "saved_to_database": False,
-    }
+    return build_approval_response(
+        session.sku,
+        request.session_id,
+        embeddings,
+    )

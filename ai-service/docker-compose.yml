@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-product_recognition}
+      POSTGRES_USER: ${POSTGRES_USER:-product_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_password}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-product_user} -d ${POSTGRES_DB:-product_recognition}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: redgate/flyway:11
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./database/migrations:/flyway/sql:ro
+    command: migrate
+    restart: "no"
+
+volumes:
+  postgres_data:
