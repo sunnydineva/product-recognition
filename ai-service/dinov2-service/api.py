@@ -46,7 +46,7 @@ def recognize(file: UploadFile = File(...)):
 
         matches = find_similar_products(
             embedding.tolist(),
-            limit=5,
+            limit=1,
         )
 
         return {

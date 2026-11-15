@@ -12,7 +12,7 @@ MAX_RESULTS = 20
 
 def find_similar_products(
     embedding: list[float],
-    limit: int = 5,
+    limit: int = 1,
 ) -> list[dict]:
     if len(embedding) != EMBEDDING_DIMENSION:
         raise ValueError(
@@ -36,15 +36,16 @@ def find_similar_products(
         with conn.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT
-                    p.sku,
-                    1 - (pe.embedding <=> %s::vector) AS similarity
-                FROM product_embeddings pe
-                JOIN products p ON p.id = pe.product_id
-                ORDER BY pe.embedding <=> %s::vector
-                LIMIT %s
+                    SELECT
+                        p.sku,
+                        MAX(1 - (pe.embedding <=> %s::vector)) AS similarity
+                    FROM product_embeddings pe
+                    JOIN products p ON p.id = pe.product_id
+                    GROUP BY p.sku
+                    ORDER BY similarity DESC
+                    LIMIT %s
                 """,
-                (vector, vector, limit),
+                (vector, limit),
             )
 
             rows = cursor.fetchall()

@@ -232,6 +232,7 @@ The tunnel routes requests to the locally running services:
 - [ ] Set up GitHub Actions CI to run Enrollment and Recognition integration tests automatically.
     - `yolo-service/tests/test_approval_integration.py`
     - `dinov2-service/tests/test_recognition_integration.py`
+- [ ] Add scheduled cleanup of temporary crop images (yolo-service/crops/).
 
 Така не се обвързваш предварително нито с FAISS
 
