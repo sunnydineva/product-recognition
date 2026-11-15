@@ -1,3 +1,5 @@
+# INSERT Persist products and their embeddings in PostgreSQL using pgvector.
+
 import os
 
 import psycopg

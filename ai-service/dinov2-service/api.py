@@ -5,6 +5,8 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from build_index import build_index as rebuild_catalog_index
 from dinov2_encoder import get_encoder, InvalidImageError
+from recognition.database import find_similar_products
+
 from faiss_index import FaissIndex
 
 
@@ -54,11 +56,28 @@ def recognize(file: UploadFile = File(...)):
         encoder = get_encoder()
         embedding = encoder.encode(image_bytes)
 
-        # TODO: Search FAISS and return matching SKUs
-        return {"status": "todo"}
+        matches = find_similar_products(
+            embedding.tolist(),
+            limit=5,
+        )
+
+        return {
+            "status": "matched" if matches else "unknown",
+            "matches": matches,
+        }
 
     except InvalidImageError as error:
         raise HTTPException(status_code=400, detail=str(error))
+
+    except Exception as error:
+        import traceback
+
+        traceback.print_exc()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to recognize product",
+        ) from error
 
 
 # Get a list of product SKUs
