@@ -39,9 +39,9 @@ TODO — Product Enrollment
 - [x] Implement POST /api/products/approve.
 - [x] Integrate YOLO Service with DINOv2 /encode.
 - [x] Generate 384-dimensional embeddings for approved images.
-- [ ] Set up PostgreSQL with pgvector.
-- [ ] Create products and product_embeddings tables.
-- [ ] Persist SKU and approved image embeddings.
+- [x] Set up PostgreSQL with pgvector.
+- [x] Create products and product_embeddings tables.
+- [x] Persist SKU and approved image embeddings.
 - [ ] Handle duplicate SKU enrollment and re-enrollment.
 - [ ] Implement product recognition using vector similarity search.
 - [ ] Integrate recognition with the Java Inventory Service.
