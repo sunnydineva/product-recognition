@@ -4,30 +4,38 @@ import numpy as np
 import cv2
 from enrollment.routes import router as enrollment_router
 from detection.crop import crop_object
-from detection.best_crop import BestCropSaver #нова функционалност трябва да избира до 10 различни качествени изображения, затова не трябва директно да използва същата логика за избор и запис.
+from detection.best_crop import (
+    BestCropSaver,
+)  # нова функционалност трябва да избира до 10 различни качествени изображения, затова не трябва директно да използва същата логика за избор и запис.
+from camera_control.router import router as camera_router
 import os
 import tempfile
 
-app = FastAPI()
+app = FastAPI(
+    title="Product Enrollment API — YOLO",
+    description=(
+        "API for product enrollment using YOLO. "
+        "Handles product detection and preparation of visual data "
+        "for the product recognition system."
+    ),
+    version="1.0.0",
+)
 app.include_router(enrollment_router)
+app.include_router(camera_router)
 
 modelYolo = YOLO("models/yolo11s.pt")
+
 
 async def read_image(file: UploadFile):
     data = await file.read()
 
-    image = cv2.imdecode(
-        np.frombuffer(data, np.uint8),
-        cv2.IMREAD_COLOR
-    )
+    image = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
 
     if image is None:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid image"
-        )
+        raise HTTPException(status_code=400, detail="Invalid image")
 
     return image
+
 
 # Detects objects in a single image without tracking.
 @app.post("/detect")
@@ -41,14 +49,17 @@ async def detect(file: UploadFile):
     for box in results[0].boxes:
         class_id = int(box.cls.item())
 
-        detections.append({
-            "class_id": class_id,
-            "class_name": modelYolo.names[class_id],
-            "confidence": float(box.conf.item()),
-            "bbox": box.xyxy[0].tolist()
-        })
+        detections.append(
+            {
+                "class_id": class_id,
+                "class_name": modelYolo.names[class_id],
+                "confidence": float(box.conf.item()),
+                "bbox": box.xyxy[0].tolist(),
+            }
+        )
 
     return {"detections": detections}
+
 
 # Detects and tracks objects across consecutive video frames,
 # assigning persistent track IDs using ByteTrack.
@@ -56,20 +67,12 @@ async def detect(file: UploadFile):
 async def track(file: UploadFile):
     image = await read_image(file)
 
-    results = modelYolo.track(
-        image,
-        tracker="bytetrack.yaml",
-        persist=True
-    )
+    results = modelYolo.track(image, tracker="bytetrack.yaml", persist=True)
 
     tracks = []
 
     for box in results[0].boxes:
-        track_id = (
-            int(box.id.item())
-            if box.id is not None
-            else None
-        )
+        track_id = int(box.id.item()) if box.id is not None else None
 
         bbox = box.xyxy[0].tolist()
 
@@ -79,18 +82,21 @@ async def track(file: UploadFile):
         if crop is None:
             continue
 
-        tracks.append({
-            "track_id": track_id,
-            "class_id": int(box.cls.item()),
-            "class_name": modelYolo.names[int(box.cls.item())],
-            "confidence": float(box.conf.item()),
-            "bbox": box.xyxy[0].tolist()
-        })
+        tracks.append(
+            {
+                "track_id": track_id,
+                "class_id": int(box.cls.item()),
+                "class_name": modelYolo.names[int(box.cls.item())],
+                "confidence": float(box.conf.item()),
+                "bbox": box.xyxy[0].tolist(),
+            }
+        )
 
         # Later: send crop to DINOv2
         # embedding = dinov2_client.embed(crop)
 
     return {"tracks": tracks}
+
 
 @app.post("/track-video")
 async def track_video(file: UploadFile):
@@ -98,8 +104,7 @@ async def track_video(file: UploadFile):
 
     if suffix not in (".avi", ".mp4", ".webm"):
         raise HTTPException(
-            status_code=400,
-            detail="Only AVI, MP4 and WebM videos are supported"
+            status_code=400, detail="Only AVI, MP4 and WebM videos are supported"
         )
 
     video_path = None
@@ -109,10 +114,7 @@ async def track_video(file: UploadFile):
 
     try:
         # Save the uploaded video to a temporary file
-        with tempfile.NamedTemporaryFile(
-            suffix=suffix,
-            delete=False
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as temp_file:
             video_path = temp_file.name
 
             while chunk := await file.read(1024 * 1024):
@@ -121,10 +123,7 @@ async def track_video(file: UploadFile):
         cap = cv2.VideoCapture(video_path)
 
         if not cap.isOpened():
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot open video"
-            )
+            raise HTTPException(status_code=400, detail="Cannot open video")
 
         # Reset tracking state for each uploaded video
         modelYolo.predictor = None
@@ -142,10 +141,7 @@ async def track_video(file: UploadFile):
 
             # Run YOLO detection and ByteTrack tracking
             results = modelYolo.track(
-                frame,
-                tracker="bytetrack.yaml",
-                persist=True,
-                verbose=False
+                frame, tracker="bytetrack.yaml", persist=True, verbose=False
             )
 
             tracks = []
@@ -166,30 +162,24 @@ async def track_video(file: UploadFile):
                 # Save the sharpest crop for this track
                 crop_saver.save_if_better(frame, bbox, track_id)
 
-                tracks.append({
-                    "track_id": track_id,
-                    "class_id": class_id,
-                    "class_name": class_name,
-                    "confidence": float(box.conf.item()),
-                    "bbox": bbox
-                })
+                tracks.append(
+                    {
+                        "track_id": track_id,
+                        "class_id": class_id,
+                        "class_name": class_name,
+                        "confidence": float(box.conf.item()),
+                        "bbox": bbox,
+                    }
+                )
 
-
-            frames.append({
-                "frame": frame_number,
-                "tracks": tracks
-            })
+            frames.append({"frame": frame_number, "tracks": tracks})
 
         if frame_number == 0:
             raise HTTPException(
-                status_code=400,
-                detail="Video contains no readable frames"
+                status_code=400, detail="Video contains no readable frames"
             )
 
-        return {
-            "total_frames": frame_number,
-            "frames": frames
-        }
+        return {"total_frames": frame_number, "frames": frames}
 
     finally:
         if cap is not None:
@@ -198,11 +188,13 @@ async def track_video(file: UploadFile):
         if video_path is not None and os.path.exists(video_path):
             os.remove(video_path)
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+
 @app.get("/yolo-names")
-def names ():
+def names():
     print(modelYolo.names)
     return {"names": modelYolo.names}

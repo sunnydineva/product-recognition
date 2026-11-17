@@ -1,4 +1,3 @@
-
 const camera = document.getElementById("camera");
 const skuInput = document.getElementById("sku");
 const statusText = document.getElementById("status");
@@ -110,8 +109,7 @@ async function handleApprove() {
         console.log("Approval result:", result);
 
         statusText.textContent =
-            `Сървърът потвърди ${result.approved_count} снимки. ` +
-            "Все още не са записани в базата.";
+            `Сървърът потвърди ${result.approved_count} снимки. `;
 
     } catch (error) {
         statusText.textContent = error.message;
@@ -125,7 +123,7 @@ async function handleApprove() {
 function recordVideo(mimeType) {
     return new Promise((resolve, reject) => {
         const chunks = [];
-        const recorder = new MediaRecorder(stream, { mimeType });
+        const recorder = new MediaRecorder(stream, {mimeType});
 
         recorder.addEventListener("dataavailable", event => {
             if (event.data.size > 0) {
@@ -138,7 +136,7 @@ function recordVideo(mimeType) {
         });
 
         recorder.addEventListener("stop", () => {
-            resolve(new Blob(chunks, { type: mimeType }));
+            resolve(new Blob(chunks, {type: mimeType}));
         });
 
         recorder.start();
@@ -181,7 +179,7 @@ async function openCamera() {
     stopCamera();
 
     stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+        video: {facingMode: {ideal: "environment"}},
         audio: false
     });
 
@@ -208,7 +206,7 @@ async function deleteCurrentSession() {
 
     const response = await fetch(
         `/api/products/preview/${encodeURIComponent(currentSessionId)}`,
-        { method: "DELETE" }
+        {method: "DELETE"}
     );
 
     if (!response.ok && response.status !== 404) {

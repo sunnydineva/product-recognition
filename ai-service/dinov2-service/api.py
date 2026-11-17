@@ -9,7 +9,16 @@ from recognition.database import find_similar_products
 CATALOG_DIR = Path(__file__).resolve().parent / "catalog"
 
 
-app = FastAPI()
+app = FastAPI(
+    title="Product Recognition API — DINOv2",
+    description=(
+        "API for recognizing previously enrolled products using "
+        "DINOv2 visual embeddings and similarity matching."
+    ),
+    version="1.0.0",
+    docs_url="/recognize/docs",
+    openapi_url="/recognize/openapi.json",
+)
 
 
 @app.get("/health")
