@@ -1,9 +1,14 @@
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from dinov2_encoder import get_encoder, InvalidImageError
 from recognition.database import find_similar_products
+from events.kafka_producer import get_producer
 
 
 CATALOG_DIR = Path(__file__).resolve().parent / "catalog"
@@ -57,6 +62,24 @@ def recognize(file: UploadFile = File(...)):
             embedding.tolist(),
             limit=1,
         )
+
+        if matches:
+            try:
+                match = matches[0]
+                producer = get_producer()
+                producer.send_stock_adjustment(
+                    product_id=match["product_id"],
+                    quantity=1,
+                    operation="DECREASE",
+                    note="recognized via dinov2",
+                )
+                producer.flush(timeout=5.0)
+            except Exception as exc:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "Failed to publish StockAdjustmentRequested event: %s", exc
+                )
 
         return {
             "status": "matched" if matches else "unknown",

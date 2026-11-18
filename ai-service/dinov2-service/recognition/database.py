@@ -37,11 +37,12 @@ def find_similar_products(
             cursor.execute(
                 """
                     SELECT
+                        p.id,
                         p.sku,
                         MAX(1 - (pe.embedding <=> %s::vector)) AS similarity
                     FROM product_embeddings pe
                     JOIN products p ON p.id = pe.product_id
-                    GROUP BY p.sku
+                    GROUP BY p.id, p.sku
                     ORDER BY similarity DESC
                     LIMIT %s
                 """,
@@ -50,4 +51,7 @@ def find_similar_products(
 
             rows = cursor.fetchall()
 
-    return [{"sku": sku, "similarity": float(similarity)} for sku, similarity in rows]
+    return [
+        {"product_id": product_id, "sku": sku, "similarity": float(similarity)}
+        for product_id, sku, similarity in rows
+    ]

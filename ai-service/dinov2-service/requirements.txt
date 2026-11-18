@@ -7,3 +7,5 @@ transformers>=4.36,<5
 pillow
 faiss-cpu
 numpy
+confluent-kafka
+python-dotenv
