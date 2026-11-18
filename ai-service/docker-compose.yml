@@ -39,6 +39,27 @@ services:
     volumes:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
       - ${CLOUDFLARED_CREDENTIALS_FILE}:/etc/cloudflared/credentials.json:ro
-      
+
+  # NOTE: Kafka, Zookeeper, and Schema Registry are temporarily reused from
+  # the online-shop docker-compose (shared-net external network).
+  # See /home/sunny/ss/projects/test/online-shop/docker-compose.yml
+  inventory-service:
+    build:
+      context: ../backend/inventory-service
+      dockerfile: Dockerfile
+    container_name: ai-product-recognition-inventory
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    networks:
+      - shared-net
+
+networks:
+  shared-net:
+    external: true
+
 volumes:
   postgres_data:
