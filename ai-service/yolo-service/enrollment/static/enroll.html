@@ -1,12 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
     <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1"
+            name="viewport"
+            content="width=device-width, initial-scale=1"
     >
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Product Enrollment</title>
 
     <style>
@@ -19,6 +21,10 @@
 
         video {
             width: 100%;
+            max-height: 56vh;
+            height: auto;
+            margin: 0 auto;
+            display: block;
             background: black;
             border-radius: 12px;
         }
@@ -37,41 +43,45 @@
 </head>
 
 <body>
-    <h2>Добавяне на продукт</h2>
+<h2>Добавяне на продукт</h2>
 
-    <label for="sku">Баркод / SKU</label>
-    <input
+<label for="sku">Баркод / SKU</label>
+<input
         id="sku"
         type="text"
         placeholder="Сканирай или въведи баркод"
         autocomplete="off"
-    >
+>
 
-    <video
+<video
         id="camera"
         autoplay
         muted
         playsinline
-    ></video>
+></video>
 
-    <button id="startCamera">Отвори камерата</button>
-    <button id="record" disabled>Запиши 12 секунди</button>
+<button id="startCamera">Отвори камерата</button>
+<button id="record" disabled>Запиши 12 секунди</button>
 
-    <p id="status"></p>
+<p id="status"></p>
 
-    <h3>Открити продукти</h3>
-    <div id="previewImages"></div>
+<p id="dbStatus"></p>
 
-    <div id="previewActions" hidden>
-        <button id="retryRecording" type="button">
-            Повтори записа
-        </button>
+<h3>Открити продукти</h3>
+<div id="previewImages"></div>
 
-        <button id="approveImages" type="button">
-            Одобри избраните
-        </button>
-    </div>
+<div id="previewActions" hidden>
+    <button id="retryRecording" type="button">
+        Повтори записа
+    </button>
 
-    <script src="/enroll.js"></script>
+    <button id="approveImages" type="button">
+        Одобри избраните
+    </button>
+
+    <p id="approvalStatus"></p>
+</div>
+
+<script src="/enroll.js?v=7"></script>
 </body>
 </html>

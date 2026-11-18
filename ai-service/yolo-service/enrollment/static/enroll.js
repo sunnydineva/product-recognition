@@ -1,6 +1,8 @@
 const camera = document.getElementById("camera");
 const skuInput = document.getElementById("sku");
 const statusText = document.getElementById("status");
+const dbStatusText = document.getElementById("dbStatus");
+const approvalStatusText = document.getElementById("approvalStatus");
 const previewImages = document.getElementById("previewImages");
 const previewActions = document.getElementById("previewActions");
 
@@ -19,7 +21,14 @@ let currentDetections = [];
 
 async function handleStartCamera() {
     try {
-        await openCamera();
+        if (stream) {
+            stopCamera();
+            startCameraButton.textContent = "Отвори камерата";
+            statusText.textContent = "Камерата е затворена.";
+        } else {
+            await openCamera();
+            startCameraButton.textContent = "Затвори камерата";
+        }
     } catch (error) {
         statusText.textContent =
             "Неуспешно отваряне на камерата: " + error.message;
@@ -108,8 +117,52 @@ async function handleApprove() {
 
         console.log("Approval result:", result);
 
-        statusText.textContent =
-            `Сървърът потвърди ${result.approved_count} снимки. `;
+        const approvalMessage =
+            `Сървърът потвърди ${result.approved_count} снимки ` +
+            `за SKU ${result.sku}.`;
+
+        if (approvalStatusText) {
+            approvalStatusText.textContent = approvalMessage;
+        } else {
+            statusText.textContent = approvalMessage;
+        }
+
+        try {
+            const dbStatus = await requestDbStatus(result.sku);
+
+            const dbMessage =
+                `В базата: ${dbStatus.embedding_count} ембединга.`;
+
+            if (approvalStatusText) {
+                approvalStatusText.textContent =
+                    approvalMessage + " " + dbMessage;
+            } else {
+                statusText.textContent =
+                    approvalMessage + " " + dbMessage;
+            }
+
+            if (dbStatusText) {
+                dbStatusText.textContent =
+                    `В базата: ${dbStatus.embedding_count} ембединга ` +
+                    `за SKU ${dbStatus.sku}.`;
+            }
+        } catch (error) {
+            const errorMessage =
+                ` (Проверка на базата неуспешна: ${error.message})`;
+
+            if (approvalStatusText) {
+                approvalStatusText.textContent =
+                    approvalMessage + errorMessage;
+            } else {
+                statusText.textContent =
+                    approvalMessage + errorMessage;
+            }
+
+            if (dbStatusText) {
+                dbStatusText.textContent =
+                    "Неуспешна проверка на базата: " + error.message;
+            }
+        }
 
     } catch (error) {
         statusText.textContent = error.message;
@@ -196,6 +249,10 @@ function stopCamera() {
 
     camera.srcObject = null;
     recordButton.disabled = true;
+
+    if (startCameraButton) {
+        startCameraButton.textContent = "Отвори камерата";
+    }
 }
 
 
@@ -275,6 +332,24 @@ async function requestApproval(payload) {
             typeof result.detail === "string"
                 ? result.detail
                 : "Грешка при одобрението"
+        );
+    }
+
+    return result;
+}
+
+async function requestDbStatus(sku) {
+    const response = await fetch(
+        `/api/products/db-status/${encodeURIComponent(sku)}`
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            typeof result.detail === "string"
+                ? result.detail
+                : "Грешка при проверката на базата"
         );
     }
 

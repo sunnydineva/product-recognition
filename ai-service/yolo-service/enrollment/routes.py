@@ -22,7 +22,10 @@ from enrollment.approval import (
     generate_embeddings,
     build_approval_response,
 )
-from enrollment.database import save_product_embeddings
+from enrollment.database import (
+    save_product_embeddings,
+    count_product_embeddings,
+)
 
 router = APIRouter()
 
@@ -216,3 +219,21 @@ async def approve_product_images(request: ApproveImagesRequest):
         request.session_id,
         embeddings,
     )
+
+
+@router.get("/api/products/db-status/{sku}")
+async def product_db_status(sku: str):
+    """Return how many embeddings are stored for the given SKU."""
+    try:
+        count = await run_in_threadpool(count_product_embeddings, sku)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to read product status from PostgreSQL",
+        ) from exc
+
+    return {
+        "sku": sku,
+        "embedding_count": count,
+        "exists": count > 0,
+    }

@@ -56,3 +56,29 @@ def save_product_embeddings(
     except Exception:
         logger.exception("Failed to save embeddings for SKU %s", sku)
         raise
+
+
+def count_product_embeddings(sku: str) -> int:
+    """Return the number of stored embeddings for the given SKU."""
+    try:
+        database_url = os.environ["DATABASE_URL"]
+
+        with psycopg.connect(database_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM product_embeddings pe
+                    JOIN products p ON p.id = pe.product_id
+                    WHERE p.sku = %s
+                    """,
+                    (sku,),
+                )
+
+                row = cur.fetchone()
+
+        return int(row[0]) if row is not None else 0
+
+    except Exception:
+        logger.exception("Failed to count embeddings for SKU %s", sku)
+        raise
