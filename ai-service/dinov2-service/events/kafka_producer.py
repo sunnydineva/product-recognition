@@ -11,7 +11,7 @@ from confluent_kafka.serialization import StringSerializer
 
 logger = logging.getLogger(__name__)
 
-SCHEMAS_DIR = Path(__file__).resolve().parents[2] / "ai-pr-event-contracts" / "schemas"
+SCHEMAS_DIR = Path(__file__).resolve().parents[3] / "ai-pr-event-contracts" / "schemas"
 
 
 def _load_schema(name: str) -> str:
@@ -29,6 +29,7 @@ class EventProducer:
             self._schema_registry,
             _load_schema("StockAdjustmentRequested.avsc"),
             to_dict=lambda obj, ctx: obj,
+            conf={"auto.register.schemas": False, "use.latest.version": True},
         )
         self._key_serializer = StringSerializer("utf_8")
 
@@ -67,7 +68,7 @@ class EventProducer:
             "note": note,
         }
         self._producer.produce(
-            topic="ai.product.stock-adjustment-requested",
+            topic="ai.stock.adjustment-requested",
             key=str(product_id),
             value=value,
             on_delivery=self._delivery_report,

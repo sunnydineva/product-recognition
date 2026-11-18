@@ -19,7 +19,7 @@ public class EventConsumer {
                 event.getInitialQuantity(), event.getTimestamp(), event.getNote());
     }
 
-    @KafkaListener(topics = "ai.product.stock-adjustment-requested", groupId = "inventory-service")
+    @KafkaListener(topics = "ai.stock.adjustment-requested", groupId = "inventory-service")
     public void onStockAdjustment(StockAdjustmentRequested event) {
         log.info("Received StockAdjustmentRequested: eventId={}, productId={}, quantity={}, operation={}, timestamp={}, note={}",
                 event.getEventId(), event.getProductId(), event.getQuantity(),
