@@ -182,23 +182,9 @@ Visible product counts do not necessarily represent total warehouse inventory. T
 
 ## Development Status
 
-### Completed
-
-- [x] YOLO11s object detection
-- [x] FastAPI REST API
-- [x] Initial custom model training
-- [x] Basic ByteTrack integration
-
-### Planned
-
-- [ ] Evaluation using unseen product images
-- [ ] Automated import of multiple product datasets
-- [ ] Product recognition with DINOv2 and FAISS
-- [ ] OCR integration
-- [ ] ByteTrack object tracking
-- [ ] Integration with Java Inventory Service
-- [ ] Low-stock monitoring and alerts
-- [ ] Docker containerization and deployment
+- **YOLO Service:** see [Current Status](ai-service/yolo-service/README.md#current-status)
+- **DINOv2 Service:** see [TODO — Product Recognition](ai-service/dinov2-service/README.md#todo--product-recognition)
+- **Inventory Service:** not yet documented
 
 ## Project Goal
 

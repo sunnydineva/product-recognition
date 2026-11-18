@@ -202,6 +202,67 @@ The tunnel routes requests to the locally running services:
 | `/api/products/approve` | YOLO — `127.0.0.1:18101`   |
 | `/recognize`            | DINOv2 — `127.0.0.1:18102` |
 
+## Kafka Events
+
+### Topics
+
+| Topic                                   | Producer                      | Consumer          |
+|-----------------------------------------|-------------------------------|-------------------|
+| `ai.product.creation-requested`         | YOLO Service (on approve)     | Inventory Service |
+| `ai.stock.adjustment-requested` | DINOv2 Service (on recognize) | Inventory Service |
+
+### How Events Are Published
+
+- **ProductCreationRequested** — published when a product is approved/enrolled via `POST /api/products/approve`.
+- **StockAdjustmentRequested** — published when a product is recognized via `POST /recognize` (operation: DECREASE).
+
+### Starting the Inventory Service Consumer
+
+```bash
+cd backend/inventory-service
+JAVA_HOME=/home/sunny/.jdks/openjdk-25 \\
+PATH=/home/sunny/.jdks/openjdk-25/bin:$PATH \\
+mvn spring-boot:run
+```
+
+The consumer listens on `localhost:9092` and prints received events to the log.
+
+### Manual Publishing (Python)
+
+ProductCreationRequested:
+
+```bash
+cd /home/sunny/ss/projects/product-recognition/ai-service
+```
+
+```bash
+set -a && . ./.env && set +a
+.venv/bin/python -c "
+import sys
+sys.path.insert(0, 'yolo-service')
+from events.kafka_producer import get_producer
+p = get_producer()
+p.send_product_creation(name='MY-SKU', initial_quantity=5, note='manual test')
+p.flush(timeout=5)
+print('sent')
+"
+```
+
+StockAdjustmentRequested:
+
+```bash
+set -a && . ./.env && set +a
+.venv/bin/python -c "
+import sys
+sys.path.insert(0, 'dinov2-service')
+from events.kafka_producer import get_producer
+p = get_producer()
+p.send_stock_adjustment(product_id=1, quantity=2, operation='DECREASE', note='manual test')
+p.flush(timeout=5)
+print('sent')
+"
+```
+
 ## Development Status
 
 ### Completed

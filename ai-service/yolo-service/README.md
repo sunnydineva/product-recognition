@@ -141,6 +141,9 @@ The enrollment functionality is implemented in the `enrollment/` package:
 | POST   | `/api/products/preview` | Process video and return selected product crops         |
 | POST   | `/api/products/approve` | Validate selected images against the enrollment session |
 
+> **Note:** After successful approval, a `ProductCreationRequested` Kafka event is published
+> (see `ai-pr-event-contracts`).
+
 ## Live Camera — YOLO + ByteTrack
 
 Run real-time object detection and tracking using a connected webcam.
@@ -235,3 +238,4 @@ Enrollment previews are stored in temporary sessions.
 
 Currently, the approval endpoint validates the selected images but does not yet save products or embeddings to the
 database.
+

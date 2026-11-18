@@ -42,6 +42,9 @@ SKU.
 
 A similarity threshold for unknown products is not yet implemented.
 
+> **Note:** When a product is recognized, a `StockAdjustmentRequested` Kafka event (operation: DECREASE) is published
+> (see `ai-pr-event-contracts`).
+
 The service requires PostgreSQL with pgvector and a configured `DATABASE_URL` environment variable.
 
 ## API Examples
