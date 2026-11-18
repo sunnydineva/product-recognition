@@ -26,6 +26,7 @@ from enrollment.database import (
     save_product_embeddings,
     count_product_embeddings,
 )
+from events.kafka_producer import get_producer
 
 router = APIRouter()
 
@@ -213,6 +214,22 @@ async def approve_product_images(request: ApproveImagesRequest):
             status_code=500,
             detail="Failed to save product embeddings to PostgreSQL",
         ) from exc
+
+    # Publish a product-creation event (best effort; do not fail the request).
+    try:
+        producer = get_producer()
+        producer.send_product_creation(
+            name=session.sku,
+            initial_quantity=len(embeddings),
+            note=f"enrolled via yolo session {request.session_id}",
+        )
+        producer.flush(timeout=5.0)
+    except Exception as exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Failed to publish ProductCreationRequested event: %s", exc
+        )
 
     return build_approval_response(
         session.sku,

@@ -1,0 +1,16 @@
+# Java
+java/target/
+*.class
+
+# Python
+python/.venv/
+python/__pycache__/
+python/ai_pr_event_contracts/__pycache__/
+*.pyc
+*.egg-info/
+python/dist/
+python/build/
+
+# IDE
+.idea/
+.vscode/

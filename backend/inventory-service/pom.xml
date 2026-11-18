@@ -13,6 +13,38 @@
     <java.version>25</java.version>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>confluent</id>
+      <url>https://packages.confluent.io/maven/</url>
+    </repository>
+  </repositories>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+        <version>3.3.10</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-messaging</artifactId>
+        <version>6.2.11</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>3.9.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-csv</artifactId>
+        <version>2.16.0</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <groupId>org.sunnydineva</groupId>
   <artifactId>inventory-service</artifactId>
   <version>1.0.0</version>
@@ -37,6 +69,27 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
+    </dependency>
+
+    <!-- Shared Avro event contracts -->
+    <dependency>
+      <groupId>org.sunnydineva</groupId>
+      <artifactId>ai-pr-event-contracts</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+
+    <!-- Kafka -->
+    <dependency>
+      <groupId>org.springframework.kafka</groupId>
+      <artifactId>spring-kafka</artifactId>
+      <version>3.3.10</version>
+    </dependency>
+
+    <!-- Confluent Avro serializer -->
+    <dependency>
+      <groupId>io.confluent</groupId>
+      <artifactId>kafka-avro-serializer</artifactId>
+      <version>7.9.1</version>
     </dependency>
 
     <!-- Validation -->

@@ -1,0 +1,41 @@
+{
+  "type": "record",
+  "name": "ProductCreationRequested",
+  "namespace": "com.aipr.events",
+  "doc": "Request to create a new product in the inventory catalog.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Unique event identifier (UUID) for idempotent processing."
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "doc": "Product display name."
+    },
+    {
+      "name": "barcode",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Optional product barcode/SKU."
+    },
+    {
+      "name": "initialQuantity",
+      "type": "int",
+      "doc": "Initial stock quantity."
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Event creation time in epoch milliseconds."
+    },
+    {
+      "name": "note",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Optional free-text note."
+    }
+  ]
+}

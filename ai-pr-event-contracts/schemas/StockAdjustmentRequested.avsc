@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "StockAdjustmentRequested",
+  "namespace": "com.aipr.events",
+  "doc": "Request to increase or decrease stock for an existing product.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Unique event identifier (UUID) for idempotent processing."
+    },
+    {
+      "name": "productId",
+      "type": "long",
+      "doc": "Internal product identifier."
+    },
+    {
+      "name": "quantity",
+      "type": "int",
+      "doc": "Amount to adjust (positive integer)."
+    },
+    {
+      "name": "operation",
+      "type": {
+        "type": "enum",
+        "name": "StockOperation",
+        "symbols": ["INCREASE", "DECREASE"]
+      },
+      "doc": "Whether to increase or decrease stock."
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Event creation time in epoch milliseconds."
+    },
+    {
+      "name": "note",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Optional free-text note."
+    }
+  ]
+}

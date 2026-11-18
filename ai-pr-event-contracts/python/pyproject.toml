@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-pr-event-contracts"
+version = "1.0.0"
+description = "Shared Avro event contracts for Kafka (product creation and stock adjustment)."
+requires-python = ">=3.10"
+dependencies = [
+    "avro>=1.12.0",
+    "fastavro>=1.9.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ai_pr_event_contracts*"]

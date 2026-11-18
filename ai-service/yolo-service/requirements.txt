@@ -6,3 +6,8 @@ opencv-python-headless
 numpy
 pillow
 requests
+confluent-kafka
+authlib
+cachetools
+attrs
+fastavro
