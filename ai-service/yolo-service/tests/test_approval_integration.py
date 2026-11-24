@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from enrollment.sessions import create_preview_session
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(PROJECT_ROOT / ".env")
 
 IMAGE_DIR = Path("/tmp/product-enrollment-sessions/47eabc070eeb420fb2c0f06658cbbf0b")

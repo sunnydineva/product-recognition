@@ -37,3 +37,4 @@
 
 - All individual agent definitions live in `opencode.jsonc` under the native V2 `agents` object. Keep this file limited to shared project guidance.
 - Use verified model identifiers and native OpenCode delegation and permissions. Do not introduce a custom orchestration framework or duplicate Markdown agent definitions.
+- Never commit or push without explicit user authorization. Always ask before creating commits, and do not amend or rewrite history unless explicitly requested.

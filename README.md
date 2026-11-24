@@ -29,6 +29,8 @@ flowchart TD
 
     L --> N["Dashboard / Notifications"]
 ```
+
+
 ## Tech Stack
 
 ### Current Technologies
@@ -46,21 +48,7 @@ flowchart TD
 - **PostgreSQL** — Product and inventory data storage
 
 ## Project Structure
-
-```mermaid
-flowchart TD
-    A["AI Service"] --> B["YOLO Service"]
-    A --> C["DINOv2 Service - Planned"]
-    A --> D["OCR Service - Planned"]
-
-    B --> E["FastAPI /detect"]
-    B --> F["YOLO11s Model"]
-    B --> G["Training Dataset"]
-    B --> H["Training Pipeline"]
-
-    H --> I["Trained Weights - best.pt"]
-```
-
+![System Architecture](docs/architecture.svg)
 ### Directory Structure
 
 ```text

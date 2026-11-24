@@ -8,10 +8,10 @@ import requests
 from dotenv import load_dotenv
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(PROJECT_ROOT / ".env")
 
-IMAGE_PATH = PROJECT_ROOT / "dinov2-service/resources/test-product.png"
+IMAGE_PATH = PROJECT_ROOT / "ai-service/dinov2-service/resources/test-product.png"
 BASE_URL = os.environ["DINOV2_SERVICE_URL"].rstrip("/")
 DATABASE_URL = os.environ["DATABASE_URL"]
 

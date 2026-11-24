@@ -1,5 +1,8 @@
 # AI Product Recognition
 
+Database setup, ownership, existing-volume upgrade precautions, and canonical
+versus local IDs: [database foundation](../infrastructure/database/README.md).
+
 A Python-based AI system for detecting, recognizing, and tracking products in warehouse environments.
 
 The system uses computer vision to identify products from images and video streams. Recognition results will be sent to
@@ -131,6 +134,9 @@ observed shelf quantities from actual inventory records.
 
 ### Start Docker Services
 
+Run from repository root; Compose reads the root `.env` (template: `.env.example`).
+The Compose project remains `ai-service` to preserve existing volumes/networks.
+
 ```bash
 docker compose up -d
 ```
@@ -236,7 +242,7 @@ cd /home/sunny/ss/projects/product-recognition/ai-service
 ```
 
 ```bash
-set -a && . ./.env && set +a
+set -a && . ../.env && set +a
 .venv/bin/python -c "
 import sys
 sys.path.insert(0, 'yolo-service')
@@ -251,7 +257,7 @@ print('sent')
 StockAdjustmentRequested:
 
 ```bash
-set -a && . ./.env && set +a
+set -a && . ../.env && set +a
 .venv/bin/python -c "
 import sys
 sys.path.insert(0, 'dinov2-service')
