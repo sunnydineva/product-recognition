@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Inventory Service API
+  version: 1.0.0
+  description: Inventory REST API under /api/v1
+paths:
+  /api/v1/products:
+    get:
+      summary: List products
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: size
+          schema: { type: integer }
+        - in: query
+          name: sort
+          schema: { type: string }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: active
+          schema: { type: boolean }
+        - in: query
+          name: hasActiveAlert
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Paged products
+    post:
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '201':
+          description: Created
+  /api/v1/products/{id}:
+    get:
+      summary: Get product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Product
+    patch:
+      summary: Update product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateRequest'
+      responses:
+        '200':
+          description: Updated
+  /api/v1/products/{id}/stock-adjustments:
+    post:
+      summary: Adjust stock
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      responses:
+        '200':
+          description: Movement
+  /api/v1/products/{id}/stock-movements:
+    get:
+      summary: List stock movements
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Paged movements
+  /api/v1/products/{id}/stock-policy:
+    put:
+      summary: Update stock policy
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockPolicyRequest'
+      responses:
+        '200':
+          description: Policy
+  /api/v1/settings:
+    get:
+      summary: Get global settings
+      responses:
+        '200':
+          description: Settings
+    put:
+      summary: Update global settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSettingsRequest'
+      responses:
+        '200':
+          description: Settings
+  /api/v1/alerts:
+    get:
+      summary: List alerts
+      responses:
+        '200':
+          description: Paged alerts
+  /api/v1/alerts/{id}/acknowledgement:
+    post:
+      summary: Acknowledge alert
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcknowledgeAlertRequest'
+      responses:
+        '200':
+          description: Alert
+components:
+  schemas:
+    ProductCreateRequest:
+      type: object
+      required: [name, sku]
+      properties:
+        name: { type: string }
+        sku: { type: string }
+        barcode: { type: string }
+        initialQuantity: { type: integer, format: int64, default: 0 }
+        active: { type: boolean, default: true }
+    ProductUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        barcode: { type: string }
+        active: { type: boolean }
+    StockAdjustmentRequest:
+      type: object
+      required: [operation, quantity, source]
+      properties:
+        operation: { type: string, enum: [INCREASE, DECREASE] }
+        quantity: { type: integer, format: int64, minimum: 1 }
+        source: { type: string }
+        note: { type: string }
+    StockPolicyRequest:
+      type: object
+      properties:
+        lowStockThreshold: { type: integer, format: int64, minimum: 0, nullable: true }
+        alertEnabled: { type: boolean, nullable: true }
+        reorderQuantity: { type: integer, format: int64, minimum: 0, nullable: true }
+    GlobalSettingsRequest:
+      type: object
+      required: [defaultLowStockThreshold, defaultAlertEnabled]
+      properties:
+        defaultLowStockThreshold: { type: integer, format: int64, minimum: 0 }
+        defaultAlertEnabled: { type: boolean }
+        defaultReorderQuantity: { type: integer, format: int64, minimum: 0, nullable: true }
+    AcknowledgeAlertRequest:
+      type: object
+      required: [acknowledgedBy]
+      properties:
+        acknowledgedBy: { type: string }
+        note: { type: string }

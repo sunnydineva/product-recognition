@@ -74,16 +74,26 @@ class DatabaseStartupTest {
                 try (Connection connection = dataSource.getConnection();
                      Statement statement = connection.createStatement()) {
                     try (ResultSet result = statement.executeQuery(
-                            "SELECT count(*) FROM flyway_schema_history WHERE version = '1' AND success")) {
+                            "SELECT count(*) FROM flyway_schema_history WHERE version = '2' AND success")) {
                         assertTrue(result.next());
                         assertEquals(1, result.getInt(1));
                     }
                     try (ResultSet result = statement.executeQuery(
                             "SELECT to_regclass('public.products') IS NOT NULL, "
-                                    + "to_regclass('public.stock') IS NOT NULL")) {
+                                    + "to_regclass('public.stock') IS NOT NULL, "
+                                    + "to_regclass('public.global_stock_settings') IS NOT NULL, "
+                                    + "to_regclass('public.product_stock_policies') IS NOT NULL, "
+                                    + "to_regclass('public.stock_movements') IS NOT NULL, "
+                                    + "to_regclass('public.alerts') IS NOT NULL, "
+                                    + "to_regclass('public.idempotency_records') IS NOT NULL")) {
                         assertTrue(result.next());
                         assertTrue(result.getBoolean(1), "products table missing");
                         assertTrue(result.getBoolean(2), "stock table missing");
+                        assertTrue(result.getBoolean(3), "global_stock_settings table missing");
+                        assertTrue(result.getBoolean(4), "product_stock_policies table missing");
+                        assertTrue(result.getBoolean(5), "stock_movements table missing");
+                        assertTrue(result.getBoolean(6), "alerts table missing");
+                        assertTrue(result.getBoolean(7), "idempotency_records table missing");
                     }
                 }
                 KafkaListenerEndpointRegistry registry = context.getBean(KafkaListenerEndpointRegistry.class);
