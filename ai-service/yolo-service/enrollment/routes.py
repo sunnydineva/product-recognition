@@ -220,7 +220,8 @@ async def approve_product_images(request: ApproveImagesRequest):
         producer = get_producer()
         producer.send_product_creation(
             name=session.sku,
-            initial_quantity=len(embeddings),
+            barcode=session.sku,
+            initial_quantity=0,
             note=f"enrolled via yolo session {request.session_id}",
         )
         producer.flush(timeout=5.0)

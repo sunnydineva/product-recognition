@@ -71,7 +71,7 @@ python3 -c 'import json,sys; print(json.dumps({"schema":open(sys.argv[1]).read()
 python3 -c 'import json,sys; print(json.dumps({"schema":open(sys.argv[1]).read()}))' \
   schemas/StockAdjustmentRequested.avsc \
   | curl -X POST \
-      http://localhost:8087/subjects/ai.stock.adjustment-requested-value/versions \
+      http://localhost:8087/subjects/ai.product.stock-adjustment-requested-value/versions \
       -H "Content-Type: application/vnd.schemaregistry.v1+json" \
       -d @-      
 ```

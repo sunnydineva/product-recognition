@@ -209,7 +209,7 @@ The tunnel routes requests to the locally running services:
 | Topic                                   | Producer                      | Consumer          |
 |-----------------------------------------|-------------------------------|-------------------|
 | `ai.product.creation-requested`         | YOLO Service (on approve)     | Inventory Service |
-| `ai.stock.adjustment-requested` | DINOv2 Service (on recognize) | Inventory Service |
+| `ai.product.stock-adjustment-requested` | DINOv2 Service (on recognize) | Inventory Service |
 
 ### How Events Are Published
 

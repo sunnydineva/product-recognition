@@ -68,7 +68,7 @@ class EventProducer:
             "note": note,
         }
         self._producer.produce(
-            topic="ai.stock.adjustment-requested",
+            topic="ai.product.stock-adjustment-requested",
             key=str(product_id),
             value=value,
             on_delivery=self._delivery_report,
