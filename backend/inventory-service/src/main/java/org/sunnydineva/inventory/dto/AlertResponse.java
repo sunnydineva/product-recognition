@@ -11,12 +11,13 @@ public record AlertResponse(
         String productSku,
         AlertType type,
         AlertStatus status,
-        long threshold,
+        Long threshold,
         long quantity,
         Instant triggeredAt,
         Instant acknowledgedAt,
         String acknowledgedBy,
         Instant resolvedAt,
-        String note
+        String note,
+        org.sunnydineva.inventory.alert.RapidDropMetadata rapidDrop
 ) {
 }

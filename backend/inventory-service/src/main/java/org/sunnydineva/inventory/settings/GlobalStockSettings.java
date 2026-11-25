@@ -13,6 +13,18 @@ import java.time.Instant;
 @Entity
 @Table(name = "global_stock_settings")
 public class GlobalStockSettings {
+    @jakarta.persistence.Embedded
+    private org.sunnydineva.inventory.policy.RapidDropColumns rapidDrop =
+            new org.sunnydineva.inventory.policy.RapidDropColumns(
+                    new org.sunnydineva.inventory.dto.RapidDropPolicy(true, 50, 24, 1L));
+
+    public org.sunnydineva.inventory.dto.RapidDropPolicy getRapidDrop() {
+        return rapidDrop.toPolicy();
+    }
+
+    public void setRapidDrop(org.sunnydineva.inventory.dto.RapidDropPolicy policy) {
+        rapidDrop = new org.sunnydineva.inventory.policy.RapidDropColumns(policy);
+    }
 
     @Id
     @Column(name = "id")

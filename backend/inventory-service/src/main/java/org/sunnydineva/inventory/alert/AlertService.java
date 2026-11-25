@@ -27,15 +27,21 @@ public class AlertService {
     private final ProductRepository productRepository;
     private final StockRepository stockRepository;
     private final EffectiveSettingsService effectiveSettingsService;
+    private final org.sunnydineva.inventory.stock.StockMovementRepository movementRepository;
+    private final java.time.Clock clock;
 
     public AlertService(AlertRepository alertRepository,
                         ProductRepository productRepository,
                         StockRepository stockRepository,
-                        EffectiveSettingsService effectiveSettingsService) {
+                        EffectiveSettingsService effectiveSettingsService,
+                        org.sunnydineva.inventory.stock.StockMovementRepository movementRepository,
+                        java.time.Clock clock) {
         this.alertRepository = alertRepository;
         this.productRepository = productRepository;
         this.stockRepository = stockRepository;
         this.effectiveSettingsService = effectiveSettingsService;
+        this.movementRepository = movementRepository;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -46,13 +52,16 @@ public class AlertService {
 
     @Transactional
     public AlertResponse acknowledge(Long id, AcknowledgeAlertRequest request) {
+        Long productId = alertRepository.findProductId(id)
+                .orElseThrow(() -> new NotFoundException("Alert not found: " + id));
+        stockRepository.findByProductIdForUpdate(productId);
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Alert not found: " + id));
         if (alert.getStatus() == AlertStatus.RESOLVED) {
             throw new org.sunnydineva.inventory.common.exception.ConflictException("Alert already resolved");
         }
         alert.setStatus(AlertStatus.ACKNOWLEDGED);
-        alert.setAcknowledgedAt(Instant.now());
+        alert.setAcknowledgedAt(clock.instant());
         alert.setAcknowledgedBy(request.acknowledgedBy());
         if (request.note() != null) {
             alert.setNote(request.note());
@@ -63,11 +72,13 @@ public class AlertService {
 
     @Transactional
     public void evaluate(Long productId) {
-        Stock stock = stockRepository.findByProductId(productId).orElse(null);
+        Stock stock = stockRepository.findByProductIdForUpdate(productId).orElse(null);
         long quantity = stock != null ? stock.getQuantity() : 0L;
         EffectiveSettings settings = effectiveSettingsService.get(productId);
         List<AlertStatus> activeStatuses = List.of(AlertStatus.ACTIVE, AlertStatus.ACKNOWLEDGED);
-        Alert existing = alertRepository.findFirstByProductIdAndStatusIn(productId, activeStatuses).orElse(null);
+        Instant now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        Alert existing = alertRepository.findFirstByProductIdAndTypeAndStatusIn(productId,
+                org.sunnydineva.inventory.enums.AlertType.LOW_STOCK, activeStatuses).orElse(null);
 
         if (settings.alertEnabled() && quantity <= settings.lowStockThreshold()) {
             if (existing == null) {
@@ -77,7 +88,7 @@ public class AlertService {
                 alert.setStatus(AlertStatus.ACTIVE);
                 alert.setThreshold(settings.lowStockThreshold());
                 alert.setQuantity(quantity);
-                alert.setTriggeredAt(Instant.now());
+                alert.setTriggeredAt(now);
                 alertRepository.save(alert);
             } else {
                 existing.setThreshold(settings.lowStockThreshold());
@@ -86,7 +97,42 @@ public class AlertService {
             }
         } else if (existing != null) {
             existing.setStatus(AlertStatus.RESOLVED);
-            existing.setResolvedAt(Instant.now());
+            existing.setResolvedAt(now);
+            alertRepository.save(existing);
+        }
+        evaluateRapidDrop(productId, stock, settings.rapidDrop(), now, activeStatuses);
+    }
+
+    private void evaluateRapidDrop(Long productId, Stock stock,
+                                  org.sunnydineva.inventory.dto.RapidDropPolicy policy,
+                                  Instant now, List<AlertStatus> activeStatuses) {
+        Alert existing = alertRepository.findFirstByProductIdAndTypeAndStatusIn(productId,
+                org.sunnydineva.inventory.enums.AlertType.RAPID_DROP, activeStatuses).orElse(null);
+        Instant cutoff = now.minus(policy.windowHours(), java.time.temporal.ChronoUnit.HOURS);
+        RapidDropMeasurement measurement = null;
+        if (policy.enabled() && stock != null && stock.getHistoryStartedAt() != null
+                && !stock.getHistoryStartedAt().isAfter(cutoff)) {
+            long baseline = movementRepository
+                    .findFirstByProductIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanEqualOrderByCreatedAtDescIdDesc(
+                            productId, stock.getHistoryStartedAt(), cutoff)
+                    .map(org.sunnydineva.inventory.stock.StockMovement::getQuantityAfter)
+                    .orElse(stock.getHistoryInitialQuantity());
+            measurement = RapidDropMeasurement.measure(baseline, stock.getQuantity());
+        }
+        if (measurement != null && measurement.qualifies(policy)) {
+            if (existing == null) {
+                existing = new Alert();
+                existing.setProductId(productId);
+                existing.setType(org.sunnydineva.inventory.enums.AlertType.RAPID_DROP);
+                existing.setStatus(AlertStatus.ACTIVE);
+                existing.setTriggeredAt(now);
+            }
+            existing.setQuantity(stock.getQuantity());
+            existing.setRapidDrop(new RapidDropMetadata(measurement, policy));
+            alertRepository.save(existing);
+        } else if (existing != null) {
+            existing.setStatus(AlertStatus.RESOLVED);
+            existing.setResolvedAt(now);
             alertRepository.save(existing);
         }
     }
@@ -106,6 +152,7 @@ public class AlertService {
                 alert.getAcknowledgedAt(),
                 alert.getAcknowledgedBy(),
                 alert.getResolvedAt(),
-                alert.getNote());
+                alert.getNote(),
+                alert.getRapidDrop());
     }
 }

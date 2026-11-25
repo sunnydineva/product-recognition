@@ -13,6 +13,16 @@ import java.time.Instant;
 @Entity
 @Table(name = "product_stock_policies")
 public class ProductStockPolicy {
+    @jakarta.persistence.Embedded
+    private RapidDropColumns rapidDrop;
+
+    public org.sunnydineva.inventory.dto.RapidDropPolicy getRapidDrop() {
+        return rapidDrop == null ? null : rapidDrop.toPolicy();
+    }
+
+    public void setRapidDrop(org.sunnydineva.inventory.dto.RapidDropPolicy policy) {
+        rapidDrop = policy == null ? null : new RapidDropColumns(policy);
+    }
 
     @Id
     @Column(name = "product_id")

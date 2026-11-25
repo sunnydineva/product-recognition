@@ -23,7 +23,8 @@ public record ProductResponse(
             long lowStockThreshold,
             boolean alertEnabled,
             Long reorderQuantity,
-            String source
+            String source,
+            RapidDropPolicy rapidDrop
     ) {
     }
 }

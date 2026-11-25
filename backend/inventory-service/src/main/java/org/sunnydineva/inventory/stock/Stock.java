@@ -13,6 +13,16 @@ import java.time.Instant;
 @Entity
 @Table(name = "stock")
 public class Stock {
+    @Column(name = "history_started_at", nullable = false)
+    private Instant historyStartedAt;
+
+    @Column(name = "history_initial_quantity", nullable = false)
+    private long historyInitialQuantity;
+
+    public Instant getHistoryStartedAt() { return historyStartedAt; }
+    public void setHistoryStartedAt(Instant value) { historyStartedAt = value; }
+    public long getHistoryInitialQuantity() { return historyInitialQuantity; }
+    public void setHistoryInitialQuantity(long value) { historyInitialQuantity = value; }
 
     @Id
     @Column(name = "product_id")

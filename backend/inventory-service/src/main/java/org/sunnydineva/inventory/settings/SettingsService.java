@@ -12,15 +12,12 @@ import java.time.Instant;
 public class SettingsService {
 
     private final GlobalStockSettingsRepository repository;
-    private final org.sunnydineva.inventory.product.ProductRepository productRepository;
-    private final org.sunnydineva.inventory.alert.AlertService alertService;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     public SettingsService(GlobalStockSettingsRepository repository,
-                           org.sunnydineva.inventory.product.ProductRepository productRepository,
-                           org.sunnydineva.inventory.alert.AlertService alertService) {
+                           org.springframework.context.ApplicationEventPublisher events) {
         this.repository = repository;
-        this.productRepository = productRepository;
-        this.alertService = alertService;
+        this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -36,7 +33,7 @@ public class SettingsService {
                 settings.getDefaultLowStockThreshold(),
                 settings.isDefaultAlertEnabled(),
                 settings.getDefaultReorderQuantity(),
-                settings.getUpdatedAt());
+                settings.getUpdatedAt(), settings.getRapidDrop());
     }
 
     @Transactional
@@ -45,13 +42,15 @@ public class SettingsService {
         settings.setDefaultLowStockThreshold(request.defaultLowStockThreshold());
         settings.setDefaultAlertEnabled(request.defaultAlertEnabled());
         settings.setDefaultReorderQuantity(request.defaultReorderQuantity());
+        settings.setRapidDrop(org.sunnydineva.inventory.policy.RapidDropColumns.merge(
+                request.rapidDrop(), settings.getRapidDrop()));
         settings.setUpdatedAt(Instant.now());
         repository.save(settings);
-        productRepository.findAll().forEach(product -> alertService.evaluate(product.getId()));
+        events.publishEvent(new SettingsChanged());
         return new GlobalSettingsResponse(
                 settings.getDefaultLowStockThreshold(),
                 settings.isDefaultAlertEnabled(),
                 settings.getDefaultReorderQuantity(),
-                settings.getUpdatedAt());
+                settings.getUpdatedAt(), settings.getRapidDrop());
     }
 }

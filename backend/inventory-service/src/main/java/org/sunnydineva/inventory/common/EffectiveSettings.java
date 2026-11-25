@@ -4,6 +4,7 @@ public record EffectiveSettings(
         long lowStockThreshold,
         boolean alertEnabled,
         Long reorderQuantity,
-        String source
+        String source,
+        org.sunnydineva.inventory.dto.RapidDropPolicy rapidDrop
 ) {
 }

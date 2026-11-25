@@ -28,7 +28,12 @@ public class EffectiveSettingsService {
         boolean hasOverride = policy != null
                 && (policy.getLowStockThreshold() != null
                 || policy.getAlertEnabled() != null
-                || policy.getReorderQuantity() != null);
+                || policy.getReorderQuantity() != null
+                || (policy.getRapidDrop() != null
+                    && (policy.getRapidDrop().enabled() != null
+                    || policy.getRapidDrop().percent() != null
+                    || policy.getRapidDrop().windowHours() != null
+                    || policy.getRapidDrop().minimumDrop() != null)));
 
         long threshold = (policy != null && policy.getLowStockThreshold() != null)
                 ? policy.getLowStockThreshold()
@@ -40,6 +45,8 @@ public class EffectiveSettingsService {
                 ? policy.getReorderQuantity()
                 : global.getDefaultReorderQuantity();
         String source = hasOverride ? "PRODUCT" : "GLOBAL";
-        return new EffectiveSettings(threshold, alertEnabled, reorderQuantity, source);
+        return new EffectiveSettings(threshold, alertEnabled, reorderQuantity, source,
+                org.sunnydineva.inventory.policy.RapidDropColumns.merge(
+                        policy == null ? null : policy.getRapidDrop(), global.getRapidDrop()));
     }
 }

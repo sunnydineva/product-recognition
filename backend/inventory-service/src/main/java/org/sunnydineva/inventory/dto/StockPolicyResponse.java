@@ -7,6 +7,7 @@ public record StockPolicyResponse(
         Long lowStockThreshold,
         Boolean alertEnabled,
         Long reorderQuantity,
-        Instant updatedAt
+        Instant updatedAt,
+        RapidDropPolicy rapidDrop
 ) {
 }

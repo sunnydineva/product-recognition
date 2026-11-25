@@ -51,6 +51,10 @@ paths:
       responses:
         '200':
           description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
     patch:
       summary: Update product
       parameters:
@@ -112,12 +116,20 @@ paths:
       responses:
         '200':
           description: Policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockPolicyResponse'
   /api/v1/settings:
     get:
       summary: Get global settings
       responses:
         '200':
           description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettingsResponse'
     put:
       summary: Update global settings
       requestBody:
@@ -129,12 +141,25 @@ paths:
       responses:
         '200':
           description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalSettingsResponse'
   /api/v1/alerts:
     get:
       summary: List alerts
       responses:
         '200':
           description: Paged alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertResponse'
   /api/v1/alerts/{id}/acknowledgement:
     post:
       summary: Acknowledge alert
@@ -152,6 +177,10 @@ paths:
       responses:
         '200':
           description: Alert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
 components:
   schemas:
     ProductCreateRequest:
@@ -183,6 +212,10 @@ components:
         lowStockThreshold: { type: integer, format: int64, minimum: 0, nullable: true }
         alertEnabled: { type: boolean, nullable: true }
         reorderQuantity: { type: integer, format: int64, minimum: 0, nullable: true }
+        rapidDrop:
+          allOf:
+            - $ref: '#/components/schemas/RapidDropPolicy'
+          description: Omitted or null object preserves rapid overrides. Present object replaces them; null or omitted members inherit global settings. Empty object resets all rapid overrides.
     GlobalSettingsRequest:
       type: object
       required: [defaultLowStockThreshold, defaultAlertEnabled]
@@ -190,6 +223,85 @@ components:
         defaultLowStockThreshold: { type: integer, format: int64, minimum: 0 }
         defaultAlertEnabled: { type: boolean }
         defaultReorderQuantity: { type: integer, format: int64, minimum: 0, nullable: true }
+        rapidDrop:
+          allOf:
+            - $ref: '#/components/schemas/RapidDropPolicy'
+          description: Omitted or null object/members retain existing global values. Defaults are enabled=true, percent=50, windowHours=24, minimumDrop=1.
+    RapidDropPolicy:
+      type: object
+      nullable: true
+      properties:
+        enabled: { type: boolean, nullable: true }
+        percent: { type: integer, minimum: 1, maximum: 100, nullable: true }
+        windowHours: { type: integer, minimum: 1, maximum: 8760, nullable: true }
+        minimumDrop: { type: integer, format: int64, minimum: 1, nullable: true }
+    GlobalSettingsResponse:
+      allOf:
+        - $ref: '#/components/schemas/GlobalSettingsRequest'
+        - type: object
+          properties:
+            updatedAt: { type: string, format: date-time }
+    StockPolicyResponse:
+      allOf:
+        - $ref: '#/components/schemas/StockPolicyRequest'
+        - type: object
+          properties:
+            productId: { type: integer, format: int64 }
+            updatedAt: { type: string, format: date-time }
+    ProductResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        sku: { type: string }
+        name: { type: string }
+        barcode: { type: string, nullable: true }
+        active: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        stock:
+          type: object
+          properties:
+            quantity: { type: integer, format: int64 }
+            updatedAt: { type: string, format: date-time }
+        effectiveSettings:
+          type: object
+          properties:
+            lowStockThreshold: { type: integer, format: int64 }
+            alertEnabled: { type: boolean }
+            reorderQuantity: { type: integer, format: int64, nullable: true }
+            source: { type: string, enum: [GLOBAL, PRODUCT] }
+            rapidDrop:
+              $ref: '#/components/schemas/RapidDropPolicy'
+    AlertResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        productId: { type: integer, format: int64 }
+        productSku: { type: string, nullable: true }
+        type: { type: string, enum: [LOW_STOCK, RAPID_DROP] }
+        status: { type: string, enum: [ACTIVE, ACKNOWLEDGED, RESOLVED] }
+        threshold:
+          type: integer
+          format: int64
+          nullable: true
+          description: LOW_STOCK threshold only; null for RAPID_DROP.
+        quantity: { type: integer, format: int64 }
+        triggeredAt: { type: string, format: date-time }
+        acknowledgedAt: { type: string, format: date-time, nullable: true }
+        acknowledgedBy: { type: string, nullable: true }
+        resolvedAt: { type: string, format: date-time, nullable: true }
+        note: { type: string, nullable: true }
+        rapidDrop:
+          type: object
+          nullable: true
+          description: Last qualifying measurement; retained on resolution. Null for LOW_STOCK.
+          properties:
+            baseline: { type: integer, format: int64 }
+            current: { type: integer, format: int64 }
+            percent: { type: integer }
+            windowHours: { type: integer }
+            minimumDrop: { type: integer, format: int64 }
+            measuredPercent: { type: number, description: Rounded to six decimals; qualification uses exact arithmetic. }
     AcknowledgeAlertRequest:
       type: object
       required: [acknowledgedBy]

@@ -36,19 +36,21 @@ public class ProductService {
     private final ProductStockPolicyRepository policyRepository;
     private final EffectiveSettingsService effectiveSettingsService;
     private final AlertService alertService;
+    private final java.time.Clock clock;
 
     public ProductService(ProductRepository productRepository,
                           StockRepository stockRepository,
                           StockMovementRepository movementRepository,
                           ProductStockPolicyRepository policyRepository,
                           EffectiveSettingsService effectiveSettingsService,
-                          AlertService alertService) {
+                          AlertService alertService, java.time.Clock clock) {
         this.productRepository = productRepository;
         this.stockRepository = stockRepository;
         this.movementRepository = movementRepository;
         this.policyRepository = policyRepository;
         this.effectiveSettingsService = effectiveSettingsService;
         this.alertService = alertService;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +64,7 @@ public class ProductService {
         if (productRepository.existsBySku(request.sku())) {
             throw new ConflictException("SKU already exists: " + request.sku());
         }
-        Instant now = Instant.now();
+        Instant now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         Product product = new Product();
         product.setName(request.name());
         product.setSku(request.sku());
@@ -76,6 +78,8 @@ public class ProductService {
         stock.setProductId(product.getId());
         stock.setQuantity(request.initialQuantity() == null ? 0L : request.initialQuantity());
         stock.setUpdatedAt(now);
+        stock.setHistoryStartedAt(now);
+        stock.setHistoryInitialQuantity(stock.getQuantity());
         stockRepository.save(stock);
 
         alertService.evaluate(product.getId());
@@ -91,6 +95,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse update(Long id, ProductUpdateRequest request) {
+        stockRepository.findByProductIdForUpdate(id);
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found: " + id));
         if (request.name() != null) {
@@ -122,13 +127,20 @@ public class ProductService {
             stock = new Stock();
             stock.setProductId(productId);
             stock.setQuantity(0L);
+            stock.setHistoryStartedAt(clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+            stock.setHistoryInitialQuantity(0L);
             stock.setUpdatedAt(Instant.now());
             stock = stockRepository.save(stock);
         }
         long delta = request.operation() == org.sunnydineva.inventory.enums.StockOperation.INCREASE
                 ? request.quantity()
                 : -request.quantity();
-        long newQuantity = stock.getQuantity() + delta;
+        long newQuantity;
+        try {
+            newQuantity = Math.addExact(stock.getQuantity(), delta);
+        } catch (ArithmeticException exception) {
+            throw new org.sunnydineva.inventory.common.exception.BadRequestException("Stock quantity overflow");
+        }
         if (newQuantity < 0) {
             throw new org.sunnydineva.inventory.common.exception.BadRequestException("Insufficient stock");
         }
@@ -143,7 +155,7 @@ public class ProductService {
         movement.setOperation(request.operation());
         movement.setSource(request.source());
         movement.setNote(request.note());
-        movement.setCreatedAt(Instant.now());
+        movement.setCreatedAt(clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
         movement = movementRepository.save(movement);
 
         alertService.evaluate(productId);
@@ -180,6 +192,7 @@ public class ProductService {
 
     @Transactional
     public StockPolicyResponse updatePolicy(Long productId, StockPolicyRequest request) {
+        stockRepository.findByProductIdForUpdate(productId);
         if (!productRepository.existsById(productId)) {
             throw new NotFoundException("Product not found: " + productId);
         }
@@ -191,6 +204,9 @@ public class ProductService {
         policy.setLowStockThreshold(request.lowStockThreshold());
         policy.setAlertEnabled(request.alertEnabled());
         policy.setReorderQuantity(request.reorderQuantity());
+        if (request.rapidDrop() != null) {
+            policy.setRapidDrop(request.rapidDrop());
+        }
         policy.setUpdatedAt(Instant.now());
         policyRepository.save(policy);
         alertService.evaluate(productId);
@@ -199,7 +215,7 @@ public class ProductService {
                 policy.getLowStockThreshold(),
                 policy.getAlertEnabled(),
                 policy.getReorderQuantity(),
-                policy.getUpdatedAt());
+                policy.getUpdatedAt(), policy.getRapidDrop());
     }
 
     private ProductResponse toResponse(Product product) {
@@ -220,6 +236,6 @@ public class ProductService {
                         es.lowStockThreshold(),
                         es.alertEnabled(),
                         es.reorderQuantity(),
-                        es.source()));
+                        es.source(), es.rapidDrop()));
     }
 }

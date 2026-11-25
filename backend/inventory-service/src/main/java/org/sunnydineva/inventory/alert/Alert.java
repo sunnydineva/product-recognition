@@ -19,6 +19,11 @@ import java.time.Instant;
 @Entity
 @Table(name = "alerts")
 public class Alert {
+    @jakarta.persistence.Embedded
+    private RapidDropMetadata rapidDrop;
+
+    public RapidDropMetadata getRapidDrop() { return rapidDrop; }
+    public void setRapidDrop(RapidDropMetadata value) { rapidDrop = value; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,8 +40,8 @@ public class Alert {
     @Column(name = "status", nullable = false, length = 32)
     private AlertStatus status;
 
-    @Column(name = "threshold", nullable = false)
-    private long threshold;
+    @Column(name = "threshold")
+    private Long threshold;
 
     @Column(name = "quantity", nullable = false)
     private long quantity;
@@ -102,11 +107,11 @@ public class Alert {
         this.status = status;
     }
 
-    public long getThreshold() {
+    public Long getThreshold() {
         return threshold;
     }
 
-    public void setThreshold(long threshold) {
+    public void setThreshold(Long threshold) {
         this.threshold = threshold;
     }
 

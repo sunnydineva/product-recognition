@@ -6,6 +6,7 @@ public record GlobalSettingsResponse(
         long defaultLowStockThreshold,
         boolean defaultAlertEnabled,
         Long defaultReorderQuantity,
-        Instant updatedAt
+        Instant updatedAt,
+        RapidDropPolicy rapidDrop
 ) {
 }
