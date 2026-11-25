@@ -22,6 +22,15 @@ out-of-range and unknown fields return 422. GET/PATCH return the same field.
 Successful PATCH means the transaction committed; settings survive restarts.
 Interactive OpenAPI documentation is at `/recognize/docs`.
 
+The public tunnel routes `/recognize/*` and `/api/recognition/settings` to
+DINOv2 on port 18102 (see `ai-service/cloudflared/config.yml`). Swagger uses
+`/recognize/health`; the original `/health` remains available locally but is
+hidden from the DINOv2 schema because the public root path belongs to YOLO.
+After changing tunnel routes, run `docker compose restart cloudflared` from
+the repository root. Restart DINOv2 as well if it does not use auto-reload.
+These application endpoints do not implement authentication; protect public
+settings access with an appropriate access policy before untrusted exposure.
+
 Each `/recognize` request reads the persisted setting without a cache.
 A finite numeric candidate score **greater than or equal to** the threshold
 is accepted. Lower/invalid scores or no candidate return the existing

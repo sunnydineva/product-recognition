@@ -41,6 +41,15 @@ class RecognitionHttpTests(unittest.TestCase):
         self.client = TestClient(self.api.app)
         self.api.get_encoder.return_value.encode.return_value.tolist.return_value = [1.0]
 
+    def test_health_routes_and_swagger_path(self):
+        for path in ("/health", "/recognize/health"):
+            response = self.client.get(path)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {"status": "ok"})
+        paths = self.client.get("/recognize/openapi.json").json()["paths"]
+        self.assertIn("/recognize/health", paths)
+        self.assertNotIn("/health", paths)
+
     def test_settings_get_patch_and_subsequent_read(self):
         # Simulated persistent database state, not a service-side cache.
         state = [0.30]

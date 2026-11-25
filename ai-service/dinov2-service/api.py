@@ -36,7 +36,8 @@ app = FastAPI(
 )
 
 
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
+@app.get("/recognize/health")
 def health():
     return {"status": "ok"}
 
