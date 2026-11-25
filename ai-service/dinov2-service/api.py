@@ -5,10 +5,20 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 from dinov2_encoder import get_encoder, InvalidImageError
 from recognition.database import find_similar_products
 from events.kafka_producer import get_producer
+from recognition.settings import (
+    SettingsUnavailableError,
+    get_min_similarity,
+    is_finite_number,
+    set_min_similarity,
+)
 
 
 CATALOG_DIR = Path(__file__).resolve().parent / "catalog"
@@ -29,6 +39,46 @@ app = FastAPI(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+class RecognitionSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    minSimilarity: float = Field(
+        strict=True, ge=0, le=1, allow_inf_nan=False,
+        description="Global cosine similarity ratio (0–1), not a probability. "
+                    "Persisted default is 0.30; equality is accepted.",
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def settings_validation_error(request, error):
+    if request.url.path == "/api/recognition/settings":
+        # Do not echo raw input: JSON cannot serialize rejected NaN/Infinity.
+        return JSONResponse(status_code=422, content={
+            "detail": [
+                {key: item[key] for key in ("type", "loc", "msg")}
+                for item in error.errors()
+            ]
+        })
+    return await request_validation_exception_handler(request, error)
+
+
+@app.get("/api/recognition/settings", response_model=RecognitionSettings)
+def get_recognition_settings():
+    try:
+        return {"minSimilarity": get_min_similarity()}
+    except SettingsUnavailableError as error:
+        raise HTTPException(status_code=503, detail="Recognition settings unavailable") from error
+
+
+@app.patch("/api/recognition/settings", response_model=RecognitionSettings)
+def patch_recognition_settings(settings: RecognitionSettings):
+    """Require minSimilarity; empty/null patches are rejected without mutation."""
+    try:
+        return {"minSimilarity": set_min_similarity(settings.minSimilarity)}
+    except SettingsUnavailableError as error:
+        raise HTTPException(status_code=503, detail="Recognition settings unavailable") from error
 
 
 # Generate an embedding from the uploaded image
@@ -52,6 +102,12 @@ def encode_image(file: UploadFile = File(...)):
 # Recognize a product using its image
 @app.post("/recognize")
 def recognize(file: UploadFile = File(...)):
+    # Fail closed before encoding, matching or publishing if configuration is unavailable.
+    try:
+        min_similarity = get_min_similarity()
+    except SettingsUnavailableError as error:
+        raise HTTPException(status_code=503, detail="Recognition settings unavailable") from error
+
     try:
         image_bytes = file.file.read()
 
@@ -62,6 +118,11 @@ def recognize(file: UploadFile = File(...)):
             embedding.tolist(),
             limit=1,
         )
+        matches = [
+            match for match in matches
+            if is_finite_number(match.get("similarity"))
+            and match["similarity"] >= min_similarity
+        ]
 
         if matches:
             try:
