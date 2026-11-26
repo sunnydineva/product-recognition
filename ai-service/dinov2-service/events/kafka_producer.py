@@ -2,6 +2,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 
 from confluent_kafka import SerializingProducer
@@ -9,7 +10,7 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 from confluent_kafka.serialization import StringSerializer
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error.dinov2.kafka")
 
 SCHEMAS_DIR = Path(__file__).resolve().parents[3] / "ai-pr-event-contracts" / "schemas"
 
@@ -41,12 +42,19 @@ class EventProducer:
             }
         )
 
-    def _delivery_report(self, err, msg) -> None:
+    def _delivery_report(self, err, msg, *, event_id=None, product_id=None) -> None:
         if err is not None:
-            logger.error("Kafka delivery failed: %s", err)
+            logger.error(
+                "DINOv2 Kafka delivery failed: eventId=%s productId=%s error=%s",
+                event_id,
+                product_id,
+                err,
+            )
         else:
             logger.info(
-                "Kafka delivered to %s [%d] offset %d",
+                "DINOv2 Kafka delivered: eventId=%s productId=%s topic=%s partition=%d offset=%d",
+                event_id,
+                product_id,
                 msg.topic(),
                 msg.partition(),
                 msg.offset(),
@@ -67,16 +75,50 @@ class EventProducer:
             "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
             "note": note,
         }
-        self._producer.produce(
-            topic="ai.product.stock-adjustment-requested",
-            key=str(product_id),
-            value=value,
-            on_delivery=self._delivery_report,
+        topic = "ai.product.stock-adjustment-requested"
+        logger.debug(
+            "DINOv2 Kafka sending StockAdjustmentRequested: eventId=%s productId=%s "
+            "operation=%s quantity=%s topic=%s",
+            value["eventId"],
+            product_id,
+            operation,
+            quantity,
+            topic,
+        )
+        try:
+            self._producer.produce(
+                topic=topic,
+                key=str(product_id),
+                value=value,
+                on_delivery=partial(
+                    self._delivery_report,
+                    event_id=value["eventId"],
+                    product_id=product_id,
+                ),
+            )
+        except Exception:
+            logger.exception(
+                "DINOv2 Kafka enqueue failed: eventId=%s productId=%s topic=%s",
+                value["eventId"],
+                product_id,
+                topic,
+            )
+            raise
+        logger.debug(
+            "DINOv2 Kafka queued (delivery pending): eventId=%s productId=%s topic=%s",
+            value["eventId"],
+            product_id,
+            topic,
         )
         self._producer.poll(0)
 
     def flush(self, timeout: float = 10.0) -> None:
-        self._producer.flush(timeout)
+        remaining = self._producer.flush(timeout)
+        if remaining:
+            logger.warning(
+                "DINOv2 Kafka flush timed out: %s message(s) still pending; delivery not confirmed",
+                remaining,
+            )
 
 
 _producer = None
