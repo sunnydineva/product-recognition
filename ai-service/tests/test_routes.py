@@ -124,6 +124,11 @@ class RouteTests(unittest.TestCase):
                     self.assertIn(method, schema["paths"][path])
             all_ids += [operation["operationId"] for item in schema["paths"].values()
                         for operation in item.values()]
+            for path, methods in schema["paths"].items():
+                for operation in methods.values():
+                    self.assertTrue(operation.get("summary"), path)
+                    self.assertTrue(operation.get("description"), path)
+                    self.assertTrue(operation.get("tags"), path)
         self.assertEqual(len(all_ids), len(set(all_ids)))
         schema = self.dino.app.openapi()["paths"]
         self.assertEqual(set(schema["/api/recognition/settings"]), {"get", "patch"})

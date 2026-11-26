@@ -54,7 +54,11 @@ async def enroll_javascript():
 
 
 @router.post("/api/products/preview", include_in_schema=False)
-@router.post("/api/yolo/products/preview")
+@router.post("/api/yolo/products/preview", tags=["Enrollment"], summary="Подготовка на изображения за enrollment",
+             description="Приема multipart video (до 25 MiB) и sku. Извлича кадри, локализира "
+                         "продукта и предлага качествени изображения за избор. Връща preview "
+                         "данни и сесия при налични кандидати. Подготвя временни данни, "
+                         "но не одобрява и не записва embeddings в PostgreSQL.")
 async def preview_product(
     video: UploadFile = File(...),
     sku: str = Form(...),
@@ -196,7 +200,12 @@ async def preview_product(
 
 
 @router.post("/api/products/approve", include_in_schema=False)
-@router.post("/api/yolo/products/approve")
+@router.post("/api/yolo/products/approve", tags=["Enrollment"], summary="Одобряване и запис на избрани изображения",
+             description="Приема session_id и image_ids от preview. Генерира embeddings чрез DINOv2 "
+                         "и ги записва в AI PostgreSQL за SKU на сесията. След записа опитва "
+                         "да публикува ProductCreationRequested с initialQuantity=0. "
+                         "Грешка при Kafka публикуване не отменя успешния DB запис; "
+                         "брой изображения не означава складова наличност.")
 async def approve_product_images(request: ApproveImagesRequest):
     session, images = load_approved_images(
         request.session_id,
@@ -242,7 +251,11 @@ async def approve_product_images(request: ApproveImagesRequest):
 
 
 @router.get("/api/products/db-status/{sku}", include_in_schema=False)
-@router.get("/api/yolo/products/db-status/{sku}")
+@router.get("/api/yolo/products/db-status/{sku}", tags=["Enrollment"],
+            summary="Проверка за записани embeddings по SKU",
+            description="Връща sku, embedding_count и exists от AI PostgreSQL. "
+                        "exists е true при поне един embedding. Това не е проверка на "
+                        "inventory наличността; DB грешка връща 500.")
 async def product_db_status(sku: str):
     """Return how many embeddings are stored for the given SKU."""
     try:

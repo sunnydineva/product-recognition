@@ -32,20 +32,30 @@ async def camera_javascript():
 
 
 @router.get("/camera/status", include_in_schema=False)
-@router.get("/api/yolo/camera/status")
+@router.get("/api/yolo/camera/status", tags=["Camera"],
+            summary="Състояние на сървърния camera worker",
+            description="Връща текущото състояние на управлявания camera процес. "
+                        "Не стартира камера и не описва браузърните WebSocket сесии.")
 async def camera_status():
     return camera_manager.status()
 
 
 @router.post("/camera/start", include_in_schema=False)
-@router.post("/api/yolo/camera/start")
+@router.post("/api/yolo/camera/start", tags=["Camera"],
+             summary="Стартиране на сървърната камера",
+             description="Стартира camera worker процес чрез CameraManager. "
+                         "Операцията използва реалната камера на сървъра и може да задейства "
+                         "детекция и последващо разпознаване. Не стартира камерата на браузъра.")
 def camera_start():
     """Start the camera worker."""
     return camera_manager.start()
 
 
 @router.post("/camera/stop", include_in_schema=False)
-@router.post("/api/yolo/camera/stop")
+@router.post("/api/yolo/camera/stop", tags=["Camera"],
+             summary="Спиране на сървърната камера",
+             description="Спира camera worker процеса чрез CameraManager. "
+                         "Не затваря отделните браузърни WebSocket сесии.")
 def camera_stop():
     """Stop the camera worker."""
     return camera_manager.stop()
@@ -74,7 +84,14 @@ async def generate_camera_stream():
 
 
 @router.get("/camera/stream", include_in_schema=False)
-@router.get("/api/yolo/camera/stream")
+@router.get("/api/yolo/camera/stream", tags=["Camera"],
+            summary="MJPEG preview от сървърната камера",
+            description="Връща multipart/x-mixed-replace поток от JPEG кадрите на работещия worker. "
+                        "Не отваря камерата повторно и не я стартира автоматично; потокът приключва "
+                        "при спрян worker. За браузърна камера използвай WebSocket "
+                        "/api/yolo/camera/ws: изпраща двоични изображения до 2 MiB и връща JSON "
+                        "резултати от tracking. WebSocket не е HTTP OpenAPI операция.",
+            response_class=StreamingResponse)
 async def camera_stream():
     """Expose the live camera preview as an MJPEG HTTP stream."""
     return StreamingResponse(

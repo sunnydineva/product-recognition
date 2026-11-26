@@ -75,7 +75,9 @@ async def read_image(file: UploadFile):
 
 # Detects objects in a single image without tracking.
 @app.post("/detect", include_in_schema=False)
-@app.post("/api/yolo/detect")
+@app.post("/api/yolo/detect", tags=["Detection"], summary="Детекция на обекти в едно изображение",
+          description="Приема multipart file и връща detections с клас, confidence и bounding box. "
+                      "Не проследява обекти, не определя SKU чрез DINOv2 и не записва продукт.")
 async def detect(file: UploadFile):
     image = await read_image(file)
 
@@ -101,7 +103,11 @@ async def detect(file: UploadFile):
 # Detects and tracks objects across consecutive video frames,
 # assigning persistent track IDs using ByteTrack.
 @app.post("/track", include_in_schema=False)
-@app.post("/api/yolo/track")
+@app.post("/api/yolo/track", tags=["Detection"], summary="Проследяване на обекти между последователни кадри",
+          description="Приема един кадър като multipart file. Използва YOLO и ByteTrack с persist=True "
+                      "и връща tracks с track_id, клас, confidence и bbox. Състоянието на tracker-а "
+                      "се споделя от модела между заявките; това не е отделна сесия на клиент. "
+                      "Не извършва DINOv2 разпознаване или запис на продукт.")
 async def track(file: UploadFile):
     image = await read_image(file)
 
@@ -137,7 +143,11 @@ async def track(file: UploadFile):
 
 
 @app.post("/track-video", include_in_schema=False)
-@app.post("/api/yolo/track-video")
+@app.post("/api/yolo/track-video", tags=["Detection"], summary="Проследяване на обекти във видео",
+          description="Приема multipart file с AVI, MP4 или WebM видео, нулира tracker-а и връща "
+                      "total_frames и tracks по кадри. Запазва избрани качествени crops чрез "
+                      "BestCropSaver; не е enrollment approval и не записва embeddings в базата. "
+                      "Временният входен видеофайл се изтрива след обработката.")
 async def track_video(file: UploadFile):
     suffix = os.path.splitext(file.filename or "")[1].lower()
 
@@ -229,13 +239,16 @@ async def track_video(file: UploadFile):
 
 
 @app.get("/health", include_in_schema=False)
-@app.get("/api/yolo/health")
+@app.get("/api/yolo/health", tags=["Health"], summary="Проверка дали YOLO API работи",
+         description="Връща status=ok. Не проверява камерата, PostgreSQL, Kafka или DINOv2.")
 def health():
     return {"status": "ok"}
 
 
 @app.get("/yolo-names", include_in_schema=False)
-@app.get("/api/yolo/names")
+@app.get("/api/yolo/names", tags=["Detection"], summary="Класове, познати на YOLO модела",
+         description="Връща речник names: ID на клас → име. Това са общи детекционни класове, "
+                     "не SKU или списък на записаните в AI базата продукти.")
 def names():
     print(modelYolo.names)
     return {"names": modelYolo.names}
