@@ -41,6 +41,15 @@
             margin-top: 16px;
         }
 
+        .results-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        td { overflow-wrap: anywhere; max-width: 180px; }
+        .recognition-sent { background: #fff4ce; }
+        .recognition-matched { background: #e0f4e5; }
+        .recognition-unknown { background: #eee; }
+        .recognition-error { background: #fde4e4; }
+
         .camera-container {
             position: relative;
             width: 100%;
@@ -89,6 +98,27 @@
 
 <p id="status">Камерата е спряна.</p>
 
-<script src="/camera.js?v=10"></script>
+<section aria-labelledby="recognitionHeading">
+    <h3 id="recognitionHeading">DINOv2 разпознаване</h3>
+    <p>Последните 50 обновени обекта. Изпращат се след изчезване от кадъра.
+        Сходството е оценка за подобие, не вероятност за правилно разпознаване.</p>
+    <p>Резултатите пристигат със следващ обработен кадър. При спиране или прекъсване
+        чакащите резултати не се получават; „Изпратено“ не означава завършено.
+        Нова сесия изчиства таблицата.</p>
+    <div class="results-scroll">
+        <table aria-label="Резултати от DINOv2">
+            <thead><tr>
+                <th scope="col">Track ID</th><th scope="col">Статус</th>
+                <th scope="col">SKU</th><th scope="col">Сходство (%)</th>
+                <th scope="col">Час</th>
+            </tr></thead>
+            <tbody id="recognitionResults">
+                <tr><td colspan="5">Все още няма изпратени обекти.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<script src="/camera.js?v=11"></script>
 </body>
 </html>

@@ -15,9 +15,66 @@ let socket = null;
 let cameraRunning = false;
 let frameTimer = null;
 
+// Updates arrive with existing frame responses; never send frames from here.
+const recognitionRows = new Map();
+const recognitionBody = document.getElementById("recognitionResults");
+const recognitionLabels = {
+    sent: "Изпратено",
+    matched: "Разпознато",
+    unknown: "Непознато",
+    error: "Грешка",
+};
+
+function renderRecognitionEvents(events, reset = false) {
+    let changed = reset;
+    for (const event of Array.isArray(events) ? events : []) {
+        if (!event || !Number.isInteger(event.track_id) ||
+            !Object.hasOwn(recognitionLabels, event.status)) continue;
+        changed = true;
+        recognitionRows.delete(event.track_id);
+        recognitionRows.set(event.track_id, event);
+        if (recognitionRows.size > 50) {
+            recognitionRows.delete(recognitionRows.keys().next().value);
+        }
+    }
+    if (!changed) return;
+    recognitionBody.replaceChildren();
+    if (recognitionRows.size === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 5;
+        cell.textContent = "Все още няма изпратени обекти.";
+        row.appendChild(cell);
+        recognitionBody.appendChild(row);
+        return;
+    }
+    for (const event of [...recognitionRows.values()].reverse()) {
+        const row = document.createElement("tr");
+        row.className = `recognition-${event.status}`;
+        const date = new Date(event.time);
+        const values = [
+            event.track_id,
+            recognitionLabels[event.status],
+            event.status === "matched" && typeof event.sku === "string"
+                ? event.sku.slice(0, 256) : "—",
+            event.status === "matched" && Number.isFinite(event.similarity)
+                ? `${(event.similarity * 100).toFixed(1)}%` : "—",
+            Number.isNaN(date.getTime()) ? "—" : date.toLocaleTimeString("bg-BG"),
+        ];
+        for (const value of values) {
+            const cell = document.createElement("td");
+            cell.textContent = String(value);
+            row.appendChild(cell);
+        }
+        recognitionBody.appendChild(row);
+    }
+}
+
 // ---------- Tracking ----------
 
 function connectTracking() {
+    recognitionRows.clear();
+    renderRecognitionEvents([], true);
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
 
     socket = new WebSocket(
@@ -40,6 +97,7 @@ function connectTracking() {
             const result = JSON.parse(event.data);
 
             console.log("YOLO result:", result);
+            renderRecognitionEvents(result.recognition_events);
 
             if (result.error) {
                 statusText.textContent = `YOLO error: ${result.error}`;

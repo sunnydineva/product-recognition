@@ -30,6 +30,26 @@ flowchart LR
 
 ## Object Detection and Tracking
 
+### Temporary browser recognition table
+
+`/camera` shows the latest 50 updated tracks with Bulgarian recognition statuses,
+the top matched SKU, similarity (displayed as a percentage, not a confidence
+probability), and event time. A new browser session clears the table; stopping
+retains it. Recognition calls, stock publishing behavior and frame pacing are unchanged.
+
+Existing WebSocket frame responses add `recognition_events`: a list of
+`{track_id, status, time}` updates, with `sku` and `similarity` on `matched`.
+Statuses are `sent`, `matched`, `unknown` and `error`; missing or malformed
+recognition results are errors, not unknown products. Time is UTC ISO 8601,
+displayed in browser-local time. SKU summaries are capped at 256 characters.
+The thread-safe transport queue holds 100 updates and drops the oldest on overflow.
+This is a best-effort live display, not a durable recognition history.
+
+Updates are drained only on the next successfully processed frame. A fast result
+can arrive alongside its `sent` update. Stop/disconnect cannot deliver pending
+final results (including crops submitted during session cleanup); `sent` does
+not imply completion. No additional recognition calls or polling are performed.
+
 The YOLO service detects and tracks objects in images and videos using YOLO11s and ByteTrack.
 
 Its primary purpose is to locate products at the checkout, extract product crops, and eventually send them to DINOv2 for
