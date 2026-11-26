@@ -2,18 +2,15 @@ tunnel: ff0b1268-9018-4c25-bdb4-2e6578baf617
 credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
-  # DINOv2 — Product Recognition
+  # DINOv2 canonical API, documentation and explicit legacy aliases.
   - hostname: ai-product-recognition.my-expenses.xyz
-    path: ^/recognize(/.*)?$
+    path: ^/(api/recognition/(recognize|encode|health|settings|catalog/(skus|[^/]+/images))|recognize(/(health|docs(/oauth2-redirect)?|openapi[.]json|redoc))?|encode|catalog/(skus|[^/]+/images))/?$
     service: http://127.0.0.1:18102
 
-  # AI-owned global recognition settings (not YOLO enrollment).
+  # YOLO canonical API (including WebSocket), docs, HTML/assets and legacy API.
+  # Public root health/docs belong to YOLO; DINO root aliases remain local.
   - hostname: ai-product-recognition.my-expenses.xyz
-    path: ^/api/recognition/settings/?$
-    service: http://127.0.0.1:18102
-
-  # YOLO — Product Enrollment + Swagger
-  - hostname: ai-product-recognition.my-expenses.xyz
+    path: ^/(api/yolo/(detect|track|track-video|names|health|products/(preview|approve|db-status/[^/]+)|camera/(status|start|stop|stream|ws))|api/products/(preview|approve|db-status/[^/]+)|yolo/(docs(/oauth2-redirect)?|openapi[.]json|redoc)|docs(/oauth2-redirect)?|openapi[.]json|redoc|detect|track|track-video|yolo-names|health|enroll([.]js)?|camera([.]js|/(status|start|stop|stream|ws))?)/?$
     service: http://127.0.0.1:18101
 
   # Fallback

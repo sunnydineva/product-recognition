@@ -90,7 +90,7 @@ uvicorn main:app --host 127.0.0.1 --port 18101 --reload
 
 Swagger UI:
 
-http://127.0.0.1:18101/docs
+http://127.0.0.1:18101/yolo/docs
 
 ### API Endpoints
 
@@ -98,16 +98,16 @@ The YOLO service exposes the following REST API endpoints:
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/detect` | Detects objects in an uploaded image. |
-| POST | `/track` | Tracks objects across sequential frames using ByteTrack. |
-| GET | `/health` | Returns the service health status. |
-| GET | `/yolo-names` | Returns the available YOLO model classes. |
+| POST | `/api/yolo/detect` | Detects objects in an uploaded image. |
+| POST | `/api/yolo/track` | Tracks objects across sequential frames using ByteTrack. |
+| GET | `/api/yolo/health` | Returns the service health status. |
+| GET | `/api/yolo/names` | Returns the available YOLO model classes. |
 
 Full interactive API documentation is available through Swagger UI:
 
-**http://127.0.0.1:18101/docs**
+**http://127.0.0.1:18101/yolo/docs**
 
-> **Note:** The `/track` endpoint currently accepts individual images. Tracking across frames requires sequential requests, and multi-camera session management is not yet implemented.
+> **Note:** The `/api/yolo/track` endpoint currently accepts individual images. Tracking across frames requires sequential requests, and multi-camera session management is not yet implemented. See [AI route compatibility](ai-service/ROUTES.md) for all routes and legacy aliases.
 
 ### Model Training
 

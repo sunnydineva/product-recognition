@@ -107,7 +107,7 @@ the [YOLO Service README](yolo-service/README.md).
 The DINOv2 service generates 384-dimensional visual embeddings from product images using the pretrained
 `facebook/dinov2-small` model.
 
-The image encoder and `/encode` API are implemented and tested. These embeddings will be used for product similarity
+The image encoder and `/api/recognition/encode` API are implemented and tested. These embeddings will be used for product similarity
 search and SKU recognition.
 
 For implementation details and API documentation, see the [DINOv2 Service README](dinov2-service/README.md).
@@ -152,7 +152,7 @@ cd yolo-service
 ../.venv/bin/uvicorn api:app --host 0.0.0.0 --port 18101 --reload
 ```
 
-Swagger UI: http://127.0.0.1:18101/docs
+Swagger UI: http://127.0.0.1:18101/yolo/docs
 
 ### DINOv2 Service — Port 18102
 
@@ -163,7 +163,7 @@ cd dinov2-service
 ../.venv/bin/uvicorn api:app --host 0.0.0.0 --port 18102 --reload
 ```
 
-Swagger UI: http://127.0.0.1:18102/docs
+Swagger UI: http://127.0.0.1:18102/recognize/docs
 
 ### Stop the Services
 
@@ -204,9 +204,12 @@ The tunnel routes requests to the locally running services:
 | Endpoint                | Local Service              |
 |-------------------------|----------------------------|
 | `/enroll`               | YOLO — `127.0.0.1:18101`   |
-| `/api/products/preview` | YOLO — `127.0.0.1:18101`   |
-| `/api/products/approve` | YOLO — `127.0.0.1:18101`   |
-| `/recognize`            | DINOv2 — `127.0.0.1:18102` |
+| `/api/yolo/products/preview` | YOLO — `127.0.0.1:18101`   |
+| `/api/yolo/products/approve` | YOLO — `127.0.0.1:18101`   |
+| `/api/recognition/recognize` | DINOv2 — `127.0.0.1:18102` |
+
+See [route map and compatibility](ROUTES.md) for bounded ingress rules, camera
+WebSockets, documentation URLs and deprecated catalog operations.
 
 ## Kafka Events
 
@@ -219,8 +222,8 @@ The tunnel routes requests to the locally running services:
 
 ### How Events Are Published
 
-- **ProductCreationRequested** — published when a product is approved/enrolled via `POST /api/products/approve`.
-- **StockAdjustmentRequested** — published when a product is recognized via `POST /recognize` (operation: DECREASE).
+- **ProductCreationRequested** — published when a product is approved/enrolled via `POST /api/yolo/products/approve`.
+- **StockAdjustmentRequested** — published when a product is recognized via `POST /api/recognition/recognize` (operation: DECREASE).
 
 ### Starting the Inventory Service Consumer
 
@@ -279,7 +282,7 @@ print('sent')
 - [x] ByteTrack object tracking
 - [x] Product cropping and best-crop selection
 - [x] Product Enrollment — video processing, crop selection, and user approval
-- [x] DINOv2 image encoder and `/encode` API
+- [x] DINOv2 image encoder and `/api/recognition/encode` API
 
 ### In Progress
 

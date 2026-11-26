@@ -8,13 +8,13 @@ similarity.
 
 ## Product Enrollment — Image Encoding
 
-During enrollment, YOLO Service sends each approved product image to DINOv2 `/encode`.
+During enrollment, YOLO Service sends each approved product image to DINOv2 `/api/recognition/encode`.
 
 DINOv2 generates an embedding and returns it to YOLO Service, which persists the SKU and embedding in PostgreSQL.
 
 ```mermaid
 flowchart LR
-    A["YOLO Service"] -->|" POST /encode "| B["DINOv2 Service"]
+    A["YOLO Service"] -->|" POST /api/recognition/encode "| B["DINOv2 Service"]
     B --> C["DINOv2 Encoder"]
     C -->|" 384D embedding "| B
     B -->|" Embedding response "| A
@@ -28,7 +28,7 @@ using pgvector cosine distance.
 
 ```mermaid
 flowchart LR
-    A["YOLO Service / API Client"] -->|" POST /recognize "| B["DINOv2 Service"]
+    A["YOLO Service / API Client"] -->|" POST /api/recognition/recognize "| B["DINOv2 Service"]
     B --> C["DINOv2 Encoder"]
     C -->|" 384D embedding "| D["Similarity Search"]
     D -->|" Cosine distance "| E[("PostgreSQL + pgvector")]
@@ -51,10 +51,10 @@ The service requires PostgreSQL with pgvector and a configured `DATABASE_URL` en
 
 ### Generate Image Embedding
 
-`POST /encode` generates a 384-dimensional embedding from an uploaded image.
+`POST /api/recognition/encode` generates a 384-dimensional embedding from an uploaded image.
 
 ```bash
-curl -X POST http://127.0.0.1:18102/encode \
+curl -X POST http://127.0.0.1:18102/api/recognition/encode \
   -F "file=@/path/to/product.jpg"
 ```
 
@@ -73,11 +73,11 @@ Example response (embedding shortened for readability):
 
 ### Recognize a Product - example
 
-POST /recognize generates an embedding from an uploaded image and searches PostgreSQL using pgvector to find the most
+POST /api/recognition/recognize generates an embedding from an uploaded image and searches PostgreSQL using pgvector to find the most
 similar enrolled products.
 
 ```bash
-curl -X POST http://127.0.0.1:18102/recognize \
+curl -X POST http://127.0.0.1:18102/api/recognition/recognize \
   -F "file=@/path/to/product.jpg"
 ```
 
@@ -108,7 +108,7 @@ python dinov2-service/seed_test_product.py
 Recognize the example product:
 
 ```bash
-curl -X POST http://127.0.0.1:18102/recognize \
+curl -X POST http://127.0.0.1:18102/api/recognition/recognize \
   -F "file=@dinov2-service/resources/test-product.png"
 ```
 
@@ -161,17 +161,18 @@ Run the existing encoder tests from `ai-service/`:
 
 FastAPI provides interactive API documentation at:
 
-- Swagger UI: http://127.0.0.1:18102/docs
-- OpenAPI schema: http://127.0.0.1:18102/openapi.json
+- Swagger UI: http://127.0.0.1:18102/recognize/docs
+- OpenAPI schema: http://127.0.0.1:18102/recognize/openapi.json
+- [Route compatibility and deprecated file catalog](../ROUTES.md)
 
 ## TODO — Product Recognition
 
 - [x] Integrate DINOv2 image encoder.
 - [x] Generate 384-dimensional image embeddings.
-- [x] Implement POST /encode.
+- [x] Implement POST /api/recognition/encode.
 - [x] Integrate PostgreSQL with pgvector.
 - [x] Implement cosine similarity search.
-- [x] Implement POST /recognize.
+- [x] Implement POST /api/recognition/recognize.
 - [x] Verify recognition with an enrolled product image.
 - [ ] Return unique product SKUs with their best similarity scores.
 - [ ] Implement similarity threshold for unknown products.

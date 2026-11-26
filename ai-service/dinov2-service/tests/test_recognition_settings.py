@@ -42,12 +42,13 @@ class RecognitionHttpTests(unittest.TestCase):
         self.api.get_encoder.return_value.encode.return_value.tolist.return_value = [1.0]
 
     def test_health_routes_and_swagger_path(self):
-        for path in ("/health", "/recognize/health"):
+        for path in ("/health", "/recognize/health", "/api/recognition/health"):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"status": "ok"})
         paths = self.client.get("/recognize/openapi.json").json()["paths"]
-        self.assertIn("/recognize/health", paths)
+        self.assertIn("/api/recognition/health", paths)
+        self.assertNotIn("/recognize/health", paths)
         self.assertNotIn("/health", paths)
 
     def test_settings_get_patch_and_subsequent_read(self):
@@ -109,7 +110,7 @@ class RecognitionHttpTests(unittest.TestCase):
                 self.api.find_similar_products.return_value = [candidate]
                 self.api.get_producer.reset_mock()
                 with patch.object(self.api, "get_min_similarity", return_value=threshold):
-                    response = self.client.post("/recognize", files={"file": ("image.jpg", b"image")})
+                    response = self.client.post("/api/recognition/recognize", files={"file": ("image.jpg", b"image")})
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json(), {
                     "status": "matched" if accepted else "unknown",
@@ -125,7 +126,7 @@ class RecognitionHttpTests(unittest.TestCase):
             self.api.find_similar_products.return_value = matches
             self.api.get_producer.reset_mock()
             with patch.object(self.api, "get_min_similarity", return_value=0.30):
-                response = self.client.post("/recognize", files={"file": ("image.jpg", b"image")})
+                response = self.client.post("/api/recognition/recognize", files={"file": ("image.jpg", b"image")})
             self.assertEqual(response.json(), {"status": "unknown", "matches": []})
             self.api.get_producer.assert_not_called()
 
@@ -137,7 +138,7 @@ class RecognitionHttpTests(unittest.TestCase):
                 "/api/recognition/settings", json={"minSimilarity": 0.2}
             ).status_code, 503)
             self.assertEqual(self.client.post(
-                "/recognize", files={"file": ("image.jpg", b"image")}
+                "/api/recognition/recognize", files={"file": ("image.jpg", b"image")}
             ).status_code, 503)
         self.api.get_encoder.assert_not_called()
         self.api.find_similar_products.assert_not_called()
@@ -149,9 +150,9 @@ class RecognitionHttpTests(unittest.TestCase):
         embedding.tolist.return_value = [1.0]
         self.api.get_encoder.return_value.encode.return_value = embedding
         with patch.object(self.api, "get_min_similarity", side_effect=AssertionError):
-            response = self.client.post("/encode", files={"file": ("image.jpg", b"image")})
+            response = self.client.post("/api/recognition/encode", files={"file": ("image.jpg", b"image")})
             self.assertEqual(response.json(), {"embedding_dimension": 1, "embedding": [1.0]})
-            response = self.client.post("/catalog/test/images", files={"file": ("image.jpg", b"image")})
+            response = self.client.post("/api/recognition/catalog/test/images", files={"file": ("image.jpg", b"image")})
             self.assertEqual(response.json(), {"status": "todo", "sku": "test"})
         self.api.get_producer.assert_not_called()
 

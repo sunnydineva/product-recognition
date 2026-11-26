@@ -18,12 +18,12 @@ router = APIRouter()
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
-@router.get("/camera")
+@router.get("/camera", include_in_schema=False)
 async def camera_page():
     return FileResponse(STATIC_DIR / "camera.html")
 
 
-@router.get("/camera.js")
+@router.get("/camera.js", include_in_schema=False)
 async def camera_javascript():
     return FileResponse(
         STATIC_DIR / "camera.js",
@@ -31,18 +31,21 @@ async def camera_javascript():
     )
 
 
-@router.get("/camera/status")
+@router.get("/camera/status", include_in_schema=False)
+@router.get("/api/yolo/camera/status")
 async def camera_status():
     return camera_manager.status()
 
 
-@router.post("/camera/start")
+@router.post("/camera/start", include_in_schema=False)
+@router.post("/api/yolo/camera/start")
 def camera_start():
     """Start the camera worker."""
     return camera_manager.start()
 
 
-@router.post("/camera/stop")
+@router.post("/camera/stop", include_in_schema=False)
+@router.post("/api/yolo/camera/stop")
 def camera_stop():
     """Stop the camera worker."""
     return camera_manager.stop()
@@ -70,7 +73,8 @@ async def generate_camera_stream():
         await asyncio.sleep(0.1)
 
 
-@router.get("/camera/stream")
+@router.get("/camera/stream", include_in_schema=False)
+@router.get("/api/yolo/camera/stream")
 async def camera_stream():
     """Expose the live camera preview as an MJPEG HTTP stream."""
     return StreamingResponse(
@@ -81,6 +85,7 @@ async def camera_stream():
 
 
 @router.websocket("/camera/ws")
+@router.websocket("/api/yolo/camera/ws")
 async def camera_websocket(websocket: WebSocket):
     """Receive browser frames and return YOLO tracking results."""
     await websocket.accept()

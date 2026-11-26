@@ -15,7 +15,7 @@ async def encode_image(image_path: Path) -> list[float]:
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            f"{DINOV2_URL}/encode",
+            f"{DINOV2_URL.rstrip('/')}/api/recognition/encode",
             files={
                 "file": (
                     image_path.name,

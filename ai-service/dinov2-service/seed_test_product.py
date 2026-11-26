@@ -12,7 +12,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 SKU = "123456789"
 IMAGE_PATH = Path(__file__).parent / "resources" / "test-product.png"
-DINO_URL = os.environ["DINOV2_SERVICE_URL"].rstrip("/") + "/encode"
+DINO_URL = os.environ["DINOV2_SERVICE_URL"].rstrip("/") + "/api/recognition/encode"
 
 
 def main():

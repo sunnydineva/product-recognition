@@ -10,7 +10,7 @@ from detection.best_crop import BestCropSaver
 
 
 DINOV2_RECOGNIZE_URL = os.getenv(
-    "DINOV2_RECOGNIZE_URL", "http://127.0.0.1:18102/recognize"
+    "DINOV2_RECOGNIZE_URL", "http://127.0.0.1:18102/api/recognition/recognize"
 )
 
 

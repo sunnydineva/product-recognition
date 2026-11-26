@@ -72,13 +72,16 @@ The enrollment functionality is implemented in the `enrollment/` package:
 | Method | Endpoint                | Description                                             |
 |--------|-------------------------|---------------------------------------------------------|
 | GET    | `/enroll`               | Open the enrollment interface                           |
-| POST   | `/api/products/preview` | Process video and return selected product crops         |
-| POST   | `/api/products/approve` | Validate selected images against the enrollment session |
-| POST   | `/detect`               | Detect objects in a single image                        |
-| POST   | `/track`                | Track objects and extract crops from an image           |
-| POST   | `/track-video`          | Track objects in video and save the best crop per track |
-| GET    | `/health`               | Check service health                                    |
-| GET    | `/yolo-names`           | Return YOLO model class names                           |
+| POST   | `/api/yolo/products/preview` | Process video and return selected product crops         |
+| POST   | `/api/yolo/products/approve` | Validate selected images against the enrollment session |
+| POST   | `/api/yolo/detect`           | Detect objects in a single image                        |
+| POST   | `/api/yolo/track`            | Track objects and extract crops from an image           |
+| POST   | `/api/yolo/track-video`      | Track objects in video and save the best crop per track |
+| GET    | `/api/yolo/health`           | Check service health                                    |
+| GET    | `/api/yolo/names`            | Return YOLO model class names                           |
+
+Swagger: `/yolo/docs`. See [full route map and compatibility](../ROUTES.md),
+including camera HTTP/WebSocket routes and unchanged HTML pages.
 
 ### Current Status
 
@@ -138,8 +141,8 @@ The enrollment functionality is implemented in the `enrollment/` package:
 | Method | Endpoint                | Description                                             |
 |--------|-------------------------|---------------------------------------------------------|
 | GET    | `/enroll`               | Open the enrollment interface                           |
-| POST   | `/api/products/preview` | Process video and return selected product crops         |
-| POST   | `/api/products/approve` | Validate selected images against the enrollment session |
+| POST   | `/api/yolo/products/preview` | Process video and return selected product crops         |
+| POST   | `/api/yolo/products/approve` | Validate selected images against the enrollment session |
 
 > **Note:** After successful approval, a `ProductCreationRequested` Kafka event is published
 > (see `ai-pr-event-contracts`).
@@ -238,4 +241,3 @@ Enrollment previews are stored in temporary sessions.
 
 Currently, the approval endpoint validates the selected images but does not yet save products or embeddings to the
 database.
-

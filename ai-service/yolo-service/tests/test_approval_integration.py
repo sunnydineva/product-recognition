@@ -48,7 +48,7 @@ class TestApprovalIntegration(unittest.IsolatedAsyncioTestCase):
                 base_url="http://test",
             ) as client:
                 response = await client.post(
-                    "/api/products/approve",
+                    "/api/yolo/products/approve",
                     json={
                         "session_id": session.session_id,
                         "image_ids": [image.image_id for image in session.images],

@@ -21,7 +21,7 @@ function connectTracking() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
 
     socket = new WebSocket(
-        `${protocol}//${location.host}/camera/ws`
+        `${protocol}//${location.host}/api/yolo/camera/ws`
     );
 
     const currentSocket = socket;

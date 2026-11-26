@@ -1,4 +1,16 @@
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load shared configuration before imports that read environment variables.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from ultralytics import YOLO
 import numpy as np
 import cv2
@@ -19,11 +31,35 @@ app = FastAPI(
         "for the product recognition system."
     ),
     version="1.0.0",
+    docs_url="/yolo/docs",
+    openapi_url="/yolo/openapi.json",
+    redoc_url="/yolo/redoc",
+    swagger_ui_oauth2_redirect_url="/yolo/docs/oauth2-redirect",
 )
 app.include_router(enrollment_router)
 app.include_router(camera_router)
 
 modelYolo = YOLO("models/yolo11s.pt")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+def legacy_openapi():
+    return app.openapi()
+
+
+@app.get("/docs", include_in_schema=False)
+def legacy_docs():
+    return get_swagger_ui_html(openapi_url=app.openapi_url, title=app.title)
+
+
+@app.get("/redoc", include_in_schema=False)
+def legacy_redoc():
+    return get_redoc_html(openapi_url=app.openapi_url, title=app.title)
+
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+def legacy_oauth_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
 
 
 async def read_image(file: UploadFile):
@@ -38,7 +74,8 @@ async def read_image(file: UploadFile):
 
 
 # Detects objects in a single image without tracking.
-@app.post("/detect")
+@app.post("/detect", include_in_schema=False)
+@app.post("/api/yolo/detect")
 async def detect(file: UploadFile):
     image = await read_image(file)
 
@@ -63,7 +100,8 @@ async def detect(file: UploadFile):
 
 # Detects and tracks objects across consecutive video frames,
 # assigning persistent track IDs using ByteTrack.
-@app.post("/track")
+@app.post("/track", include_in_schema=False)
+@app.post("/api/yolo/track")
 async def track(file: UploadFile):
     image = await read_image(file)
 
@@ -98,7 +136,8 @@ async def track(file: UploadFile):
     return {"tracks": tracks}
 
 
-@app.post("/track-video")
+@app.post("/track-video", include_in_schema=False)
+@app.post("/api/yolo/track-video")
 async def track_video(file: UploadFile):
     suffix = os.path.splitext(file.filename or "")[1].lower()
 
@@ -189,12 +228,14 @@ async def track_video(file: UploadFile):
             os.remove(video_path)
 
 
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
+@app.get("/api/yolo/health")
 def health():
     return {"status": "ok"}
 
 
-@app.get("/yolo-names")
+@app.get("/yolo-names", include_in_schema=False)
+@app.get("/api/yolo/names")
 def names():
     print(modelYolo.names)
     return {"names": modelYolo.names}

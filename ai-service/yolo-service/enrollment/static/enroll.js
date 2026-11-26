@@ -262,7 +262,7 @@ async function deleteCurrentSession() {
     if (!currentSessionId) return;
 
     const response = await fetch(
-        `/api/products/preview/${encodeURIComponent(currentSessionId)}`,
+        `/api/yolo/products/preview/${encodeURIComponent(currentSessionId)}`,
         {method: "DELETE"}
     );
 
@@ -298,7 +298,7 @@ async function requestPreview(blob, sku, mimeType) {
     formData.append("video", blob, `product.${extension}`);
     formData.append("sku", sku);
 
-    const response = await fetch("/api/products/preview", {
+    const response = await fetch("/api/yolo/products/preview", {
         method: "POST",
         body: formData
     });
@@ -317,7 +317,7 @@ async function requestPreview(blob, sku, mimeType) {
 }
 
 async function requestApproval(payload) {
-    const response = await fetch("/api/products/approve", {
+    const response = await fetch("/api/yolo/products/approve", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -340,7 +340,7 @@ async function requestApproval(payload) {
 
 async function requestDbStatus(sku) {
     const response = await fetch(
-        `/api/products/db-status/${encodeURIComponent(sku)}`
+        `/api/yolo/products/db-status/${encodeURIComponent(sku)}`
     );
 
     const result = await response.json();

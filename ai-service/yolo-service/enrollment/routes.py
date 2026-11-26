@@ -40,12 +40,12 @@ class ApproveImagesRequest(BaseModel):
     image_ids: list[str] = Field(min_length=1, max_length=10)
 
 
-@router.get("/enroll")
+@router.get("/enroll", include_in_schema=False)
 async def enroll_page():
     return FileResponse(STATIC_DIR / "enroll.html")
 
 
-@router.get("/enroll.js")
+@router.get("/enroll.js", include_in_schema=False)
 async def enroll_javascript():
     return FileResponse(
         STATIC_DIR / "enroll.js",
@@ -53,7 +53,8 @@ async def enroll_javascript():
     )
 
 
-@router.post("/api/products/preview")
+@router.post("/api/products/preview", include_in_schema=False)
+@router.post("/api/yolo/products/preview")
 async def preview_product(
     video: UploadFile = File(...),
     sku: str = Form(...),
@@ -194,7 +195,8 @@ async def preview_product(
             os.remove(video_path)
 
 
-@router.post("/api/products/approve")
+@router.post("/api/products/approve", include_in_schema=False)
+@router.post("/api/yolo/products/approve")
 async def approve_product_images(request: ApproveImagesRequest):
     session, images = load_approved_images(
         request.session_id,
@@ -239,7 +241,8 @@ async def approve_product_images(request: ApproveImagesRequest):
     )
 
 
-@router.get("/api/products/db-status/{sku}")
+@router.get("/api/products/db-status/{sku}", include_in_schema=False)
+@router.get("/api/yolo/products/db-status/{sku}")
 async def product_db_status(sku: str):
     """Return how many embeddings are stored for the given SKU."""
     try:

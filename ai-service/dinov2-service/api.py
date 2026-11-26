@@ -8,6 +8,11 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from dinov2_encoder import get_encoder, InvalidImageError
@@ -33,11 +38,34 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/recognize/docs",
     openapi_url="/recognize/openapi.json",
+    redoc_url="/recognize/redoc",
+    swagger_ui_oauth2_redirect_url="/recognize/docs/oauth2-redirect",
 )
 
 
+@app.get("/openapi.json", include_in_schema=False)
+def legacy_openapi():
+    return app.openapi()
+
+
+@app.get("/docs", include_in_schema=False)
+def legacy_docs():
+    return get_swagger_ui_html(openapi_url=app.openapi_url, title=app.title)
+
+
+@app.get("/redoc", include_in_schema=False)
+def legacy_redoc():
+    return get_redoc_html(openapi_url=app.openapi_url, title=app.title)
+
+
+@app.get("/docs/oauth2-redirect", include_in_schema=False)
+def legacy_oauth_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+
 @app.get("/health", include_in_schema=False)
-@app.get("/recognize/health")
+@app.get("/recognize/health", include_in_schema=False)
+@app.get("/api/recognition/health")
 def health():
     return {"status": "ok"}
 
@@ -83,7 +111,8 @@ def patch_recognition_settings(settings: RecognitionSettings):
 
 
 # Generate an embedding from the uploaded image
-@app.post("/encode")
+@app.post("/encode", include_in_schema=False)
+@app.post("/api/recognition/encode")
 def encode_image(file: UploadFile = File(...)):
     try:
         image_bytes = file.file.read()
@@ -101,7 +130,8 @@ def encode_image(file: UploadFile = File(...)):
 
 
 # Recognize a product using its image
-@app.post("/recognize")
+@app.post("/recognize", include_in_schema=False)
+@app.post("/api/recognition/recognize")
 def recognize(file: UploadFile = File(...)):
     # Fail closed before encoding, matching or publishing if configuration is unavailable.
     try:
@@ -163,7 +193,8 @@ def recognize(file: UploadFile = File(...)):
 
 
 # Get a list of product SKUs
-@app.get("/catalog/skus")
+@app.get("/catalog/skus", include_in_schema=False)
+@app.get("/api/recognition/catalog/skus", deprecated=True)
 def get_catalog_skus():
     skus = sorted(sku_dir.name for sku_dir in CATALOG_DIR.iterdir() if sku_dir.is_dir())
 
@@ -171,7 +202,8 @@ def get_catalog_skus():
 
 
 # Add a reference image to a product SKU
-@app.post("/catalog/{sku}/images")
+@app.post("/catalog/{sku}/images", include_in_schema=False)
+@app.post("/api/recognition/catalog/{sku}/images", deprecated=True)
 def add_catalog_image(sku: str, file: UploadFile = File(...)):
     # TODO: Save the image and update the FAISS index
     return {"status": "todo", "sku": sku}

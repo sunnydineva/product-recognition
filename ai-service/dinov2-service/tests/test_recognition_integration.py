@@ -26,7 +26,7 @@ class TestRecognitionIntegration(unittest.TestCase):
                 # Generate an embedding for the test image.
                 with IMAGE_PATH.open("rb") as image:
                     response = requests.post(
-                        f"{BASE_URL}/encode",
+                        f"{BASE_URL}/api/recognition/encode",
                         files={"file": image},
                         timeout=60,
                     )
@@ -59,7 +59,7 @@ class TestRecognitionIntegration(unittest.TestCase):
                 # Recognize the same image through the API.
                 with IMAGE_PATH.open("rb") as image:
                     response = requests.post(
-                        f"{BASE_URL}/recognize",
+                        f"{BASE_URL}/api/recognition/recognize",
                         files={"file": image},
                         timeout=60,
                     )

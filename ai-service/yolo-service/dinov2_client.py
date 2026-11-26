@@ -3,7 +3,7 @@ import os
 
 DINOV2_URL = os.getenv(
     "DINOV2_RECOGNIZE_URL",
-    "http://127.0.0.1:18102/recognize"
+    "http://127.0.0.1:18102/api/recognition/recognize"
 )
 
 
