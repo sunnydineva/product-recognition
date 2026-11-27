@@ -106,7 +106,10 @@ class RecognitionHttpTests(unittest.TestCase):
             (0.30, "0.9", False), (0.30, None, False),
         ]:
             with self.subTest(threshold=threshold, score=score):
-                candidate = {"product_id": 7, "sku": "test", "similarity": score}
+                candidate = {
+                    "product_id": 7, "sku": "test", "name": "Test product",
+                    "note": "Shelf A", "similarity": score,
+                }
                 self.api.find_similar_products.return_value = [candidate]
                 self.api.get_producer.reset_mock()
                 with patch.object(self.api, "get_min_similarity", return_value=threshold):

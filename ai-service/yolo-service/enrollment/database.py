@@ -12,21 +12,26 @@ logger = logging.getLogger(__name__)
 def save_product_embeddings(
     sku: str,
     embeddings: list[tuple[str, list[float]]],
+    name: str | None = None,
+    note: str | None = None,
 ) -> None:
     try:
         database_url = os.environ["DATABASE_URL"]
 
         with psycopg.connect(database_url) as conn:
             with conn.cursor() as cur:
+                # COALESCE keeps existing hints when a client omits metadata.
                 cur.execute(
                     """
-                    INSERT INTO products (sku)
-                    VALUES (%s)
+                    INSERT INTO products (sku, name, note)
+                    VALUES (%s, %s, %s)
                     ON CONFLICT (sku)
-                    DO UPDATE SET sku = EXCLUDED.sku
+                    DO UPDATE SET
+                        name = COALESCE(EXCLUDED.name, products.name),
+                        note = COALESCE(EXCLUDED.note, products.note)
                     RETURNING id
                     """,
-                    (sku,),
+                    (sku, name, note),
                 )
 
                 product_id = cur.fetchone()[0]

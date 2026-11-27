@@ -33,11 +33,34 @@ router = APIRouter()
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+MAX_NAME_LENGTH = 255
+MAX_NOTE_LENGTH = 2000
+
+
+def _optional_text(value: str | None, max_length: int, field: str) -> str | None:
+    """Trim an optional form field; blank input means no value."""
+    if value is None:
+        return None
+
+    value = value.strip()
+
+    if not value:
+        return None
+
+    if len(value) > max_length:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid {field}",
+        )
+
+    return value
 
 
 class ApproveImagesRequest(BaseModel):
     session_id: str
     image_ids: list[str] = Field(min_length=1, max_length=10)
+    name: str | None = Field(default=None, max_length=MAX_NAME_LENGTH)
+    note: str | None = Field(default=None, max_length=MAX_NOTE_LENGTH)
 
 
 @router.get("/enroll", include_in_schema=False)
@@ -55,13 +78,15 @@ async def enroll_javascript():
 
 @router.post("/api/products/preview", include_in_schema=False)
 @router.post("/api/yolo/products/preview", tags=["Enrollment"], summary="Подготовка на изображения за enrollment",
-             description="Приема multipart video (до 25 MiB) и sku. Извлича кадри, локализира "
-                         "продукта и предлага качествени изображения за избор. Връща preview "
-                         "данни и сесия при налични кандидати. Подготвя временни данни, "
-                         "но не одобрява и не записва embeddings в PostgreSQL.")
+             description="Приема multipart video (до 25 MiB), sku и незадължителни name/note. "
+                         "Извлича кадри, локализира продукта и предлага качествени изображения "
+                         "за избор. Връща preview данни и сесия при налични кандидати. "
+                         "Подготвя временни данни, но не одобрява и не записва embeddings в PostgreSQL.")
 async def preview_product(
     video: UploadFile = File(...),
     sku: str = Form(...),
+    name: str | None = Form(None),
+    note: str | None = Form(None),
 ):
     sku = sku.strip()
 
@@ -70,6 +95,9 @@ async def preview_product(
             status_code=422,
             detail="Invalid SKU",
         )
+
+    name = _optional_text(name, MAX_NAME_LENGTH, "name")
+    note = _optional_text(note, MAX_NOTE_LENGTH, "note")
 
     video_path = None
     total_bytes = 0
@@ -133,6 +161,8 @@ async def preview_product(
             session = create_preview_session(
                 sku=sku,
                 crops=[(item.timestamp_ms, item.product.crop) for item in selected],
+                name=name,
+                note=note,
             )
 
         localized = []
@@ -201,15 +231,28 @@ async def preview_product(
 
 @router.post("/api/products/approve", include_in_schema=False)
 @router.post("/api/yolo/products/approve", tags=["Enrollment"], summary="Одобряване и запис на избрани изображения",
-             description="Приема session_id и image_ids от preview. Генерира embeddings чрез DINOv2 "
-                         "и ги записва в AI PostgreSQL за SKU на сесията. След записа опитва "
-                         "да публикува ProductCreationRequested с initialQuantity=0. "
+             description="Приема session_id, image_ids и незадължителни name/note от preview. "
+                         "Генерира embeddings чрез DINOv2 и ги записва в AI PostgreSQL за SKU "
+                         "на сесията. След записа опитва да публикува ProductCreationRequested "
+                         "с initialQuantity=0; name пада към SKU при празно име, а note е незадължителна. "
                          "Грешка при Kafka публикуване не отменя успешния DB запис; "
                          "брой изображения не означава складова наличност.")
 async def approve_product_images(request: ApproveImagesRequest):
     session, images = load_approved_images(
         request.session_id,
         request.image_ids,
+    )
+
+    # An omitted request value keeps the session hint; an explicit blank clears it.
+    name = (
+        _optional_text(request.name, MAX_NAME_LENGTH, "name")
+        if request.name is not None
+        else session.name
+    )
+    note = (
+        _optional_text(request.note, MAX_NOTE_LENGTH, "note")
+        if request.note is not None
+        else session.note
     )
 
     embeddings = await generate_embeddings(images)
@@ -219,6 +262,8 @@ async def approve_product_images(request: ApproveImagesRequest):
             save_product_embeddings,
             session.sku,
             embeddings,
+            name=name,
+            note=note,
         )
     except Exception as exc:
         raise HTTPException(
@@ -230,10 +275,10 @@ async def approve_product_images(request: ApproveImagesRequest):
     try:
         producer = get_producer()
         producer.send_product_creation(
-            name=session.sku,
+            name=name or session.sku,
             barcode=session.sku,
             initial_quantity=0,
-            note=f"enrolled via yolo session {request.session_id}",
+            note=note,
         )
         producer.flush(timeout=5.0)
     except Exception as exc:

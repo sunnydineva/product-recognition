@@ -149,7 +149,8 @@ def encode_image(file: UploadFile = File(...)):
 @app.post("/api/recognition/recognize", tags=["Recognition"], summary="Разпознаване на вече записан продукт",
           description="Приема изображение като multipart поле file и търси най-близкия продукт "
                       "в PostgreSQL embeddings. При similarity ≥ глобалния праг връща matched "
-                      "и matches; иначе unknown и празен списък. При недостъпни настройки връща 503. "
+                      "и matches с добавени name/note, когато са налични; иначе unknown и празен "
+                      "списък. При недостъпни настройки връща 503. "
                       "Важно: при прието съвпадение опитва да изпрати Kafka DECREASE за 1 брой; "
                       "не е само read-only проверка. matched не гарантира доставка на събитието "
                       "или промяна в inventory. product_id в резултата е локален AI идентификатор.")

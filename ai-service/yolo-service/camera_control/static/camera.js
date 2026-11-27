@@ -42,7 +42,7 @@ function renderRecognitionEvents(events, reset = false) {
     if (recognitionRows.size === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
-        cell.colSpan = 5;
+        cell.colSpan = 7;
         cell.textContent = "Все още няма изпратени обекти.";
         row.appendChild(cell);
         recognitionBody.appendChild(row);
@@ -52,13 +52,18 @@ function renderRecognitionEvents(events, reset = false) {
         const row = document.createElement("tr");
         row.className = `recognition-${event.status}`;
         const date = new Date(event.time);
+        const matched = event.status === "matched";
         const values = [
             event.track_id,
-            recognitionLabels[event.status],
-            event.status === "matched" && typeof event.sku === "string"
+            matched && typeof event.sku === "string"
                 ? event.sku.slice(0, 256) : "—",
-            event.status === "matched" && Number.isFinite(event.similarity)
+            matched && typeof event.name === "string"
+                ? event.name.slice(0, 255) : "—",
+            matched && typeof event.note === "string"
+                ? event.note.slice(0, 2000) : "—",
+            matched && Number.isFinite(event.similarity)
                 ? `${(event.similarity * 100).toFixed(1)}%` : "—",
+            recognitionLabels[event.status],
             Number.isNaN(date.getTime()) ? "—" : date.toLocaleTimeString("bg-BG"),
         ];
         for (const value of values) {

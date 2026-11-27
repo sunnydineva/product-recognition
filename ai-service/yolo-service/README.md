@@ -32,16 +32,19 @@ flowchart LR
 
 ### Temporary browser recognition table
 
-`/camera` shows the latest 50 updated tracks with Bulgarian recognition statuses,
-the top matched SKU, similarity (displayed as a percentage, not a confidence
-probability), and event time. A new browser session clears the table; stopping
-retains it. Recognition calls, stock publishing behavior and frame pacing are unchanged.
+`/camera` shows the latest 50 updated tracks with columns for the track ID, the
+top matched SKU, optional AI enrollment name and note, similarity (displayed as
+a percentage, not a confidence probability), Bulgarian recognition status, and
+event time.
+A new browser session clears the table; stopping retains it. Recognition calls,
+stock publishing behavior and frame pacing are unchanged.
 
 Existing WebSocket frame responses add `recognition_events`: a list of
-`{track_id, status, time}` updates, with `sku` and `similarity` on `matched`.
-Statuses are `sent`, `matched`, `unknown` and `error`; missing or malformed
-recognition results are errors, not unknown products. Time is UTC ISO 8601,
-displayed in browser-local time. SKU summaries are capped at 256 characters.
+`{track_id, status, time}` updates, with `sku`, `similarity`, and optional
+`name`/`note` on `matched`. Statuses are `sent`, `matched`, `unknown` and `error`;
+missing or malformed recognition results are errors, not unknown products. Time
+is UTC ISO 8601, displayed in browser-local time. SKU summaries are capped at
+256 characters, names at 255 and notes at 2000.
 The thread-safe transport queue holds 100 updates and drops the oldest on overflow.
 This is a best-effort live display, not a durable recognition history.
 
@@ -86,6 +89,10 @@ The enrollment functionality is implemented in the `enrollment/` package:
 | `encoding.py`            | Convert selected images into DINOv2 embeddings, if added |
 | `static/enroll.html`     | Mobile-friendly enrollment interface                     |
 | `static/enroll.js`       | Camera recording, preview, selection and approval        |
+
+Enrollment accepts an optional display name and note alongside SKU. These are
+AI-side recognition hints only; inventory remains the canonical owner. The
+approval event sends the name (falling back to SKU when blank), barcode and note.
 
 ### API Endpoints
 

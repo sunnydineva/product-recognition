@@ -197,6 +197,7 @@ components:
       properties:
         name: { type: string }
         barcode: { type: string }
+        note: { type: string, nullable: true, description: Canonical inventory note; blank clears it. }
         active: { type: boolean }
     StockAdjustmentRequest:
       type: object
@@ -255,6 +256,7 @@ components:
         sku: { type: string }
         name: { type: string }
         barcode: { type: string, nullable: true }
+        note: { type: string, nullable: true, description: Canonical inventory note; AI events only seed it when the product is created. }
         active: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

@@ -41,13 +41,17 @@ class BrowserCameraTests(unittest.TestCase):
         self.assertIn("+00:00", sent[0]["time"])
         self.assertEqual(session._drain_recognition_events(), [])
         self.module.recognize_crop.return_value = {
-            "status": "matched", "matches": [{"sku": "SKU", "similarity": .85}],
+            "status": "matched", "matches": [{
+                "sku": "SKU", "name": "Product one", "note": "Aisle 2",
+                "similarity": .85,
+            }],
         }
         fn, *args = session.recognition_worker.submit.call_args.args
         fn(*args)
         result = session._drain_recognition_events()[0]
         self.assertEqual((result["track_id"], result["status"], result["sku"],
-                          result["similarity"]), (7, "matched", "SKU", .85))
+                          result["name"], result["note"], result["similarity"]),
+                         (7, "matched", "SKU", "Product one", "Aisle 2", .85))
         session.pending_crops[7] = b"again"
         session._submit_recognition(7)
         session.recognition_worker.submit.assert_called_once()
@@ -94,10 +98,27 @@ class BrowserCameraTests(unittest.TestCase):
         events = self.session._drain_recognition_events()
         self.assertEqual([e["track_id"] for e in events], list(range(50, 150)))
         self.module.recognize_crop.return_value = {
-            "status": "matched", "matches": [{"sku": "S" * 10000, "similarity": .9}],
+            "status": "matched", "matches": [{
+                "sku": "S" * 10000, "name": "N" * 1000, "note": "X" * 5000,
+                "similarity": .9,
+            }],
         }
         self.session._recognize_track(b"jpeg", 1)
-        self.assertEqual(len(self.session._drain_recognition_events()[0]["sku"]), 256)
+        event = self.session._drain_recognition_events()[0]
+        self.assertEqual((len(event["sku"]), len(event["name"]), len(event["note"])),
+                         (256, 255, 2000))
+
+    def test_optional_metadata_is_ignored_when_malformed(self):
+        self.module.recognize_crop.return_value = {
+            "status": "matched", "matches": [{
+                "sku": "SKU", "name": 123, "note": {"bad": True}, "similarity": .9,
+            }],
+        }
+        self.session._recognize_track(b"jpeg", 2)
+        event = self.session._drain_recognition_events()[0]
+        self.assertEqual((event["status"], event["sku"]), ("matched", "SKU"))
+        self.assertNotIn("name", event)
+        self.assertNotIn("note", event)
 
     def test_concurrent_producers_and_drain(self):
         # Keep each batch below the queue limit so loss/duplication is detectable.

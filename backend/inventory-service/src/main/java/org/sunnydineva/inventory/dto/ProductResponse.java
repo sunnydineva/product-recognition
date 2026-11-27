@@ -7,6 +7,7 @@ public record ProductResponse(
         String sku,
         String name,
         String barcode,
+        String note,
         boolean active,
         Instant createdAt,
         Instant updatedAt,

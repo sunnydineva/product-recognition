@@ -166,9 +166,15 @@ class BrowserCameraSession:
                 or not -1 <= similarity <= 1
             ):
                 raise ValueError("Invalid recognition SKU or similarity")
-            self._record_recognition(
-                track_id, "matched", sku=sku[:256], similarity=similarity,
-            )
+
+            details = {"sku": sku[:256], "similarity": similarity}
+            name, note = match.get("name"), match.get("note")
+            if isinstance(name, str) and name.strip():
+                details["name"] = name[:255]
+            if isinstance(note, str) and note.strip():
+                details["note"] = note[:2000]
+
+            self._record_recognition(track_id, "matched", **details)
         except Exception:
             logger.exception("Browser recognition failed for track %s", track_id)
             self._record_recognition(track_id, "error")

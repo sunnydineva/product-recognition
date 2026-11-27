@@ -28,6 +28,9 @@ public class Product {
     @Column(name = "barcode", length = 128)
     private String barcode;
 
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
+
     @Column(name = "active", nullable = false)
     private boolean active = true;
 
@@ -86,6 +89,14 @@ public class Product {
 
     public void setBarcode(String barcode) {
         this.barcode = barcode;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     public boolean isActive() {

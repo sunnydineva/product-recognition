@@ -34,6 +34,8 @@ class PreviewSession:
     sku: str
     created_at: float
     images: list[SessionImage]
+    name: str | None = None
+    note: str | None = None
 
 
 class SessionError(Exception):
@@ -106,6 +108,8 @@ def cleanup_expired_sessions() -> int:
 def create_preview_session(
     sku: str,
     crops: list[tuple[int, np.ndarray]],
+    name: str | None = None,
+    note: str | None = None,
 ) -> PreviewSession:
     """
     crops: [(timestamp_ms, original_bgr_crop), ...]
@@ -167,6 +171,8 @@ def create_preview_session(
                 sku=sku.strip(),
                 created_at=time.time(),
                 images=images,
+                name=name.strip() if name and name.strip() else None,
+                note=note.strip() if note and note.strip() else None,
             )
 
             _sessions[session_id] = session

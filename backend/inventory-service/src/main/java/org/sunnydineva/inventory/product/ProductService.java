@@ -86,6 +86,62 @@ public class ProductService {
         return toResponse(product);
     }
 
+    /**
+     * Create an inventory product from an AI ProductCreationRequested event.
+     * SKU comes from the event barcode, falling back to the event name. Existing
+     * products are never overwritten because inventory is the canonical owner.
+     *
+     * @return true when a new product was created, false when it already existed
+     *         or the event has no usable identifier.
+     */
+    @Transactional
+    public boolean createFromAiEvent(String name, String barcode, String note, int initialQuantity) {
+        String sku = firstNonBlank(barcode, name);
+
+        if (sku == null) {
+            return false;
+        }
+
+        if (productRepository.existsBySku(sku)) {
+            return false;
+        }
+
+        Instant now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        Product product = new Product();
+        product.setSku(sku);
+        product.setName(firstNonBlank(name, sku));
+        product.setBarcode(trimToNull(barcode));
+        product.setNote(trimToNull(note));
+        product.setActive(true);
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
+        product = productRepository.save(product);
+
+        Stock stock = new Stock();
+        stock.setProductId(product.getId());
+        stock.setQuantity(Math.max(0, initialQuantity));
+        stock.setUpdatedAt(now);
+        stock.setHistoryStartedAt(now);
+        stock.setHistoryInitialQuantity(stock.getQuantity());
+        stockRepository.save(stock);
+
+        alertService.evaluate(product.getId());
+        return true;
+    }
+
+    private static String firstNonBlank(String first, String fallback) {
+        String value = trimToNull(first);
+        return value != null ? value : trimToNull(fallback);
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     @Transactional(readOnly = true)
     public ProductResponse get(Long id) {
         Product product = productRepository.findById(id)
@@ -106,6 +162,10 @@ public class ProductService {
         }
         if (request.barcode() != null) {
             product.setBarcode(request.barcode());
+        }
+        if (request.note() != null) {
+            // Blank clears the canonical note.
+            product.setNote(trimToNull(request.note()));
         }
         if (request.active() != null) {
             product.setActive(request.active());
@@ -228,6 +288,7 @@ public class ProductService {
                 product.getSku(),
                 product.getName(),
                 product.getBarcode(),
+                product.getNote(),
                 product.isActive(),
                 product.getCreatedAt(),
                 product.getUpdatedAt(),

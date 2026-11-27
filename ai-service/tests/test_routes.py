@@ -8,11 +8,12 @@ from pathlib import Path
 import re
 import sys
 import tempfile
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+import numpy as np
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -223,6 +224,8 @@ class RouteTests(unittest.TestCase):
         with TestClient(self.yolo.app) as client:
             for path in ("/enroll", "/camera", "/enroll.js", "/camera.js"):
                 self.assertEqual(client.get(path).status_code, 200)
+            enroll_page = client.get("/enroll").text
+            camera_page = client.get("/camera").text
             enroll = client.get("/enroll.js").text
             camera = client.get("/camera.js").text
         for suffix in ("preview", "approve", "db-status/"):
@@ -230,6 +233,87 @@ class RouteTests(unittest.TestCase):
         self.assertNotIn("/api/products/", enroll)
         self.assertIn("${protocol}//${location.host}/api/yolo/camera/ws", camera)
         self.assertIn('location.protocol === "https:"', camera)
+        self.assertIn('id="name"', enroll_page)
+        self.assertIn('id="note"', enroll_page)
+        for heading in ("Track ID", "SKU", "Име", "Бележка", "Сходство (%)", "Статус", "Час"):
+            self.assertIn(f"<th scope=\"col\">{heading}</th>", camera_page)
+
+    def test_enrollment_preview_and_approve_accept_optional_metadata(self):
+        routes = self.yolo.test_modules["enrollment.routes"]
+        crop = np.zeros((8, 8, 3), dtype=np.uint8)
+        product = SimpleNamespace(crop=crop, bbox=(0, 0, 8, 8), score=0.9)
+        item = SimpleNamespace(
+            timestamp_ms=120, product=product, sharpness=2.0,
+            brightness=3.0, quality_score=0.8,
+        )
+        frame = SimpleNamespace(image=crop, timestamp_ms=120)
+        session = SimpleNamespace(
+            session_id="session-1", sku="SKU-1", name="Product one",
+            note="Aisle 2", images=[SimpleNamespace(image_id="image-1")],
+        )
+
+        with patch.object(routes, "extract_frames", return_value=[frame]), \
+             patch.object(routes, "localize_product", return_value=product), \
+             patch.object(routes, "select_best_crops", return_value=[item]), \
+             patch.object(routes, "create_preview_session", return_value=session) as create, \
+             TestClient(self.yolo.app) as client:
+            response = client.post(
+                "/api/yolo/products/preview",
+                files={"video": ("clip.webm", b"video")},
+                data={"sku": " SKU-1 ", "name": " Product one ", "note": " Aisle 2 "},
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(create.call_args.kwargs["sku"], "SKU-1")
+        self.assertEqual(create.call_args.kwargs["name"], "Product one")
+        self.assertEqual(create.call_args.kwargs["note"], "Aisle 2")
+
+        embeddings = [("image-1", [0.0] * 384)]
+        producer = MagicMock()
+        with patch.object(routes, "load_approved_images",
+                          return_value=(session, [MagicMock()])), \
+             patch.object(routes, "generate_embeddings",
+                          AsyncMock(return_value=embeddings)), \
+             patch.object(routes, "save_product_embeddings") as save, \
+             patch.object(routes, "get_producer", return_value=producer), \
+             TestClient(self.yolo.app) as client:
+            response = client.post(
+                "/api/yolo/products/approve",
+                json={
+                    "session_id": "session-1", "image_ids": ["image-1"],
+                    "name": " Updated name ", "note": " Updated note ",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        save.assert_called_once_with(
+            "SKU-1", embeddings, name="Updated name", note="Updated note",
+        )
+        producer.send_product_creation.assert_called_once_with(
+            name="Updated name", barcode="SKU-1", initial_quantity=0,
+            note="Updated note",
+        )
+
+        producer.reset_mock()
+        with patch.object(routes, "load_approved_images",
+                          return_value=(SimpleNamespace(
+                              sku="SKU-2", name=None, note="Session note"), [])), \
+             patch.object(routes, "generate_embeddings", AsyncMock(return_value=[])), \
+             patch.object(routes, "save_product_embeddings") as save, \
+             patch.object(routes, "get_producer", return_value=producer), \
+             TestClient(self.yolo.app) as client:
+            response = client.post(
+                "/api/yolo/products/approve",
+                json={"session_id": "session-2", "image_ids": ["image-1"]},
+            )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        save.assert_called_once_with(
+            "SKU-2", [], name=None, note="Session note",
+        )
+        producer.send_product_creation.assert_called_once_with(
+            name="SKU-2", barcode="SKU-2", initial_quantity=0, note="Session note",
+        )
 
     def test_enrollment_encoder_url_and_dimension(self):
         encoder = self.yolo.test_modules["enrollment.dinov2_client"]

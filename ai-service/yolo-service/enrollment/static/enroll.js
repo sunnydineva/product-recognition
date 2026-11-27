@@ -1,5 +1,7 @@
 const camera = document.getElementById("camera");
 const skuInput = document.getElementById("sku");
+const nameInput = document.getElementById("name");
+const noteInput = document.getElementById("note");
 const statusText = document.getElementById("status");
 const dbStatusText = document.getElementById("dbStatus");
 const approvalStatusText = document.getElementById("approvalStatus");
@@ -298,6 +300,12 @@ async function requestPreview(blob, sku, mimeType) {
     formData.append("video", blob, `product.${extension}`);
     formData.append("sku", sku);
 
+    const name = nameInput?.value.trim() ?? "";
+    const note = noteInput?.value.trim() ?? "";
+
+    if (name) formData.append("name", name);
+    if (note) formData.append("note", note);
+
     const response = await fetch("/api/yolo/products/preview", {
         method: "POST",
         body: formData
@@ -436,7 +444,9 @@ function buildApprovalPayload() {
 
     return {
         session_id: currentSessionId,
-        image_ids: imageIds
+        image_ids: imageIds,
+        name: nameInput?.value.trim() ?? "",
+        note: noteInput?.value.trim() ?? ""
     };
 }
 

@@ -88,7 +88,7 @@ class DatabaseStartupTest {
                 try (Connection connection = dataSource.getConnection();
                      Statement statement = connection.createStatement()) {
                     try (ResultSet result = statement.executeQuery(
-                            "SELECT count(*) FROM flyway_schema_history WHERE version = '3' AND success")) {
+                            "SELECT count(*) FROM flyway_schema_history WHERE version = '4' AND success")) {
                         assertTrue(result.next());
                         assertEquals(1, result.getInt(1));
                     }
@@ -99,7 +99,10 @@ class DatabaseStartupTest {
                                     + "to_regclass('public.product_stock_policies') IS NOT NULL, "
                                     + "to_regclass('public.stock_movements') IS NOT NULL, "
                                     + "to_regclass('public.alerts') IS NOT NULL, "
-                                    + "to_regclass('public.idempotency_records') IS NOT NULL")) {
+                                    + "to_regclass('public.idempotency_records') IS NOT NULL, "
+                                    + "EXISTS (SELECT 1 FROM information_schema.columns "
+                                    + "WHERE table_schema = 'public' AND table_name = 'products' "
+                                    + "AND column_name = 'note' AND is_nullable = 'YES')")) {
                         assertTrue(result.next());
                         assertTrue(result.getBoolean(1), "products table missing");
                         assertTrue(result.getBoolean(2), "stock table missing");
@@ -108,6 +111,7 @@ class DatabaseStartupTest {
                         assertTrue(result.getBoolean(5), "stock_movements table missing");
                         assertTrue(result.getBoolean(6), "alerts table missing");
                         assertTrue(result.getBoolean(7), "idempotency_records table missing");
+                        assertTrue(result.getBoolean(8), "nullable products.note column missing");
                     }
                 }
                 verifyRapidDrop(context);
