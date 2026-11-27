@@ -53,6 +53,7 @@ class PreviewSessionMetadataTests(unittest.TestCase):
 
         first = sessions.create_preview_session(
             sku=" SKU-1 ", crops=[(0, crop)], name=" Product one ", note=" Aisle 2 ",
+            initial_quantity=12,
         )
         second = sessions.create_preview_session(sku="SKU-2", crops=[(0, crop)])
 
@@ -61,6 +62,8 @@ class PreviewSessionMetadataTests(unittest.TestCase):
                              ("SKU-1", "Product one", "Aisle 2"))
             self.assertIsNone(second.name)
             self.assertIsNone(second.note)
+            self.assertEqual(first.initial_quantity, 12)
+            self.assertEqual(second.initial_quantity, 0)
         finally:
             sessions.delete_preview_session(first.session_id)
             sessions.delete_preview_session(second.session_id)

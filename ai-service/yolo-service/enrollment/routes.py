@@ -35,6 +35,19 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 MAX_NAME_LENGTH = 255
 MAX_NOTE_LENGTH = 2000
+MAX_INITIAL_QUANTITY = 2147483647  # Avro int
+
+
+def _initial_quantity(value: str) -> int:
+    value = value.strip()
+    if not value:
+        return 0
+    if not value.isascii() or not value.isdecimal() or len(value) > 10:
+        raise HTTPException(status_code=422, detail="Invalid initial_quantity")
+    quantity = int(value)
+    if quantity > MAX_INITIAL_QUANTITY:
+        raise HTTPException(status_code=422, detail="Invalid initial_quantity")
+    return quantity
 
 
 def _optional_text(value: str | None, max_length: int, field: str) -> str | None:
@@ -61,6 +74,7 @@ class ApproveImagesRequest(BaseModel):
     image_ids: list[str] = Field(min_length=1, max_length=10)
     name: str | None = Field(default=None, max_length=MAX_NAME_LENGTH)
     note: str | None = Field(default=None, max_length=MAX_NOTE_LENGTH)
+    initial_quantity: int | None = Field(default=None, strict=True, ge=0, le=MAX_INITIAL_QUANTITY)
 
 
 @router.get("/enroll", include_in_schema=False)
@@ -78,7 +92,8 @@ async def enroll_javascript():
 
 @router.post("/api/products/preview", include_in_schema=False)
 @router.post("/api/yolo/products/preview", tags=["Enrollment"], summary="Подготовка на изображения за enrollment",
-             description="Приема multipart video (до 25 MiB), sku и незадължителни name/note. "
+             description="Приема multipart video (до 25 MiB), sku и незадължителни name/note "
+                         "и initial_quantity (цяло число 0–2147483647, по подразбиране 0). "
                          "Извлича кадри, локализира продукта и предлага качествени изображения "
                          "за избор. Връща preview данни и сесия при налични кандидати. "
                          "Подготвя временни данни, но не одобрява и не записва embeddings в PostgreSQL.")
@@ -87,6 +102,7 @@ async def preview_product(
     sku: str = Form(...),
     name: str | None = Form(None),
     note: str | None = Form(None),
+    initial_quantity: str = Form("0"),
 ):
     sku = sku.strip()
 
@@ -98,6 +114,7 @@ async def preview_product(
 
     name = _optional_text(name, MAX_NAME_LENGTH, "name")
     note = _optional_text(note, MAX_NOTE_LENGTH, "note")
+    quantity = _initial_quantity(initial_quantity)
 
     video_path = None
     total_bytes = 0
@@ -163,6 +180,7 @@ async def preview_product(
                 crops=[(item.timestamp_ms, item.product.crop) for item in selected],
                 name=name,
                 note=note,
+                initial_quantity=quantity,
             )
 
         localized = []
@@ -234,7 +252,8 @@ async def preview_product(
              description="Приема session_id, image_ids и незадължителни name/note от preview. "
                          "Генерира embeddings чрез DINOv2 и ги записва в AI PostgreSQL за SKU "
                          "на сесията. След записа опитва да публикува ProductCreationRequested "
-                         "с initialQuantity=0; name пада към SKU при празно име, а note е незадължителна. "
+                         "с initialQuantity от сесията или подаденото initial_quantity (по подразбиране 0). "
+                         "Количеството се използва само за нов SKU; name пада към SKU при празно име. "
                          "Грешка при Kafka публикуване не отменя успешния DB запис; "
                          "брой изображения не означава складова наличност.")
 async def approve_product_images(request: ApproveImagesRequest):
@@ -277,7 +296,8 @@ async def approve_product_images(request: ApproveImagesRequest):
         producer.send_product_creation(
             name=name or session.sku,
             barcode=session.sku,
-            initial_quantity=0,
+            initial_quantity=(request.initial_quantity if request.initial_quantity is not None
+                              else session.initial_quantity),
             note=note,
         )
         producer.flush(timeout=5.0)

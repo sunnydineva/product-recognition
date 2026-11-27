@@ -249,7 +249,7 @@ class RouteTests(unittest.TestCase):
         frame = SimpleNamespace(image=crop, timestamp_ms=120)
         session = SimpleNamespace(
             session_id="session-1", sku="SKU-1", name="Product one",
-            note="Aisle 2", images=[SimpleNamespace(image_id="image-1")],
+            note="Aisle 2", initial_quantity=12, images=[SimpleNamespace(image_id="image-1")],
         )
 
         with patch.object(routes, "extract_frames", return_value=[frame]), \
@@ -260,13 +260,14 @@ class RouteTests(unittest.TestCase):
             response = client.post(
                 "/api/yolo/products/preview",
                 files={"video": ("clip.webm", b"video")},
-                data={"sku": " SKU-1 ", "name": " Product one ", "note": " Aisle 2 "},
+                data={"sku": " SKU-1 ", "name": " Product one ", "note": " Aisle 2 ", "initial_quantity": "12"},
             )
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(create.call_args.kwargs["sku"], "SKU-1")
         self.assertEqual(create.call_args.kwargs["name"], "Product one")
         self.assertEqual(create.call_args.kwargs["note"], "Aisle 2")
+        self.assertEqual(create.call_args.kwargs["initial_quantity"], 12)
 
         embeddings = [("image-1", [0.0] * 384)]
         producer = MagicMock()
@@ -290,14 +291,14 @@ class RouteTests(unittest.TestCase):
             "SKU-1", embeddings, name="Updated name", note="Updated note",
         )
         producer.send_product_creation.assert_called_once_with(
-            name="Updated name", barcode="SKU-1", initial_quantity=0,
+            name="Updated name", barcode="SKU-1", initial_quantity=12,
             note="Updated note",
         )
 
         producer.reset_mock()
         with patch.object(routes, "load_approved_images",
                           return_value=(SimpleNamespace(
-                              sku="SKU-2", name=None, note="Session note"), [])), \
+                              sku="SKU-2", name=None, note="Session note", initial_quantity=0), [])), \
              patch.object(routes, "generate_embeddings", AsyncMock(return_value=[])), \
              patch.object(routes, "save_product_embeddings") as save, \
              patch.object(routes, "get_producer", return_value=producer), \
@@ -314,6 +315,33 @@ class RouteTests(unittest.TestCase):
         producer.send_product_creation.assert_called_once_with(
             name="SKU-2", barcode="SKU-2", initial_quantity=0, note="Session note",
         )
+
+    def test_enrollment_initial_quantity_validation_and_override(self):
+        routes = self.yolo.test_modules["enrollment.routes"]
+        producer = MagicMock()
+        with patch.object(routes, "load_approved_images", return_value=(
+                SimpleNamespace(sku="Q", name=None, note=None, initial_quantity=8), [])), \
+             patch.object(routes, "generate_embeddings", AsyncMock(return_value=[])), \
+             patch.object(routes, "save_product_embeddings"), \
+             patch.object(routes, "get_producer", return_value=producer), \
+             TestClient(self.yolo.app) as client:
+            for value in [0, 5, 2147483647]:
+                producer.reset_mock()
+                response = client.post("/api/yolo/products/approve", json={
+                    "session_id": "q", "image_ids": ["i"], "initial_quantity": value})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(producer.send_product_creation.call_args.kwargs["initial_quantity"], value)
+            producer.reset_mock()
+            for value in [-1, 1.5, True, "4", 2147483648]:
+                response = client.post("/api/yolo/products/approve", json={
+                    "session_id": "q", "image_ids": ["i"], "initial_quantity": value})
+                self.assertEqual(response.status_code, 422, response.text)
+            producer.send_product_creation.assert_not_called()
+            for value in ["-1", "1.5", "true", "2147483648", "1e2"]:
+                response = client.post("/api/yolo/products/preview",
+                    files={"video": ("clip.webm", b"video")},
+                    data={"sku": "Q", "initial_quantity": value})
+                self.assertEqual(response.status_code, 422, response.text)
 
     def test_enrollment_encoder_url_and_dimension(self):
         encoder = self.yolo.test_modules["enrollment.dinov2_client"]

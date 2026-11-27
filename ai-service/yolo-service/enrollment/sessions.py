@@ -36,6 +36,7 @@ class PreviewSession:
     images: list[SessionImage]
     name: str | None = None
     note: str | None = None
+    initial_quantity: int = 0
 
 
 class SessionError(Exception):
@@ -110,6 +111,7 @@ def create_preview_session(
     crops: list[tuple[int, np.ndarray]],
     name: str | None = None,
     note: str | None = None,
+    initial_quantity: int = 0,
 ) -> PreviewSession:
     """
     crops: [(timestamp_ms, original_bgr_crop), ...]
@@ -173,6 +175,7 @@ def create_preview_session(
                 images=images,
                 name=name.strip() if name and name.strip() else None,
                 note=note.strip() if note and note.strip() else None,
+                initial_quantity=initial_quantity,
             )
 
             _sessions[session_id] = session

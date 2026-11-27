@@ -84,10 +84,24 @@ class ProductCreationEventTest {
     void existingSkuIsNeverOverwritten() {
         when(products.existsBySku("SKU-1")).thenReturn(true);
 
-        assertFalse(service.createFromAiEvent("New name", "SKU-1", "New note", 0));
+        assertFalse(service.createFromAiEvent("New name", "SKU-1", "New note", 25));
 
         verify(products, never()).save(any());
         verifyNoInteractions(stocks, alerts);
+    }
+
+    @Test
+    void createsInitialStockFromEnrollmentQuantity() {
+        when(products.save(any(Product.class))).thenAnswer(call -> {
+            Product product = call.getArgument(0);
+            product.setId(42L);
+            return product;
+        });
+        assertTrue(service.createFromAiEvent("Product", "NEW", null, 25));
+        ArgumentCaptor<Stock> stock = ArgumentCaptor.forClass(Stock.class);
+        verify(stocks).save(stock.capture());
+        assertEquals(25L, stock.getValue().getQuantity());
+        assertEquals(25L, stock.getValue().getHistoryInitialQuantity());
     }
 
     @Test

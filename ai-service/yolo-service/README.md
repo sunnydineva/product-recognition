@@ -94,6 +94,13 @@ Enrollment accepts an optional display name and note alongside SKU. These are
 AI-side recognition hints only; inventory remains the canonical owner. The
 approval event sends the name (falling back to SKU when blank), barcode and note.
 
+Enrollment also accepts optional `initial_quantity` (integer 0–2147483647,
+default 0). Preview stores it in the session; approve may override it, including
+with zero. It is sent as `ProductCreationRequested.initialQuantity`, not stored
+as AI stock. Inventory uses it only when creating a new SKU. Re-enrolling an
+existing SKU never changes its stock; use the inventory manual correction UI.
+Image/embedding counts are unrelated to quantity. No schema migration is needed.
+
 ### API Endpoints
 
 | Method | Endpoint                | Description                                             |

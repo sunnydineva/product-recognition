@@ -53,6 +53,11 @@
         autocomplete="off"
 >
 
+<label for="initialQuantity">Начално количество (по избор)</label>
+<input id="initialQuantity" type="number" min="0" max="2147483647" step="1" value="0">
+<p>Само за нов продукт в inventory. При съществуващ SKU наличността не се променя;
+    използвайте ръчната корекция. Количеството не зависи от броя снимки.</p>
+
 <label for="name">Име (по избор)</label>
 <input
         id="name"
@@ -100,6 +105,6 @@
     <p id="approvalStatus"></p>
 </div>
 
-<script src="/enroll.js?v=8"></script>
+<script src="/enroll.js?v=9"></script>
 </body>
 </html>

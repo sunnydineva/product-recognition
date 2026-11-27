@@ -2,6 +2,17 @@ const camera = document.getElementById("camera");
 const skuInput = document.getElementById("sku");
 const nameInput = document.getElementById("name");
 const noteInput = document.getElementById("note");
+const quantityInput = document.getElementById("initialQuantity");
+
+function initialQuantity() {
+    const value = quantityInput.value.trim();
+    if (!value) return 0;
+    if (!/^[0-9]+$/.test(value) || !Number.isSafeInteger(Number(value)) ||
+        Number(value) > 2147483647) {
+        throw new Error("Началното количество трябва да е цяло число между 0 и 2147483647.");
+    }
+    return Number(value);
+}
 const statusText = document.getElementById("status");
 const dbStatusText = document.getElementById("dbStatus");
 const approvalStatusText = document.getElementById("approvalStatus");
@@ -299,6 +310,7 @@ async function requestPreview(blob, sku, mimeType) {
     const formData = new FormData();
     formData.append("video", blob, `product.${extension}`);
     formData.append("sku", sku);
+    formData.append("initial_quantity", String(initialQuantity()));
 
     const name = nameInput?.value.trim() ?? "";
     const note = noteInput?.value.trim() ?? "";
@@ -446,7 +458,8 @@ function buildApprovalPayload() {
         session_id: currentSessionId,
         image_ids: imageIds,
         name: nameInput?.value.trim() ?? "",
-        note: noteInput?.value.trim() ?? ""
+        note: noteInput?.value.trim() ?? "",
+        initial_quantity: initialQuantity()
     };
 }
 
