@@ -114,6 +114,7 @@ class DatabaseStartupTest {
                         assertTrue(result.getBoolean(8), "nullable products.note column missing");
                     }
                 }
+                verifyDocumentation(context);
                 verifyRapidDrop(context);
                 verifyHttpSettings(context);
                 KafkaListenerEndpointRegistry registry = context.getBean(KafkaListenerEndpointRegistry.class);
@@ -263,18 +264,18 @@ class DatabaseStartupTest {
         var settings = context.getBean(org.sunnydineva.inventory.settings.SettingsService.class);
         var product = products.create(new org.sunnydineva.inventory.dto.ProductCreateRequest(
                 "HTTP policy test", "http-policy-test", null, 100L, true));
-        String policyPath = "/api/v1/products/" + product.id() + "/stock-policy";
+        String policyPath = "/api/inventory/v1/products/" + product.id() + "/stock-policy";
         String globalPrefix = "\"defaultLowStockThreshold\":10,\"defaultAlertEnabled\":true";
         var globalPolicy = new org.sunnydineva.inventory.dto.RapidDropPolicy(true, 65, 12, 3L);
         var override = new org.sunnydineva.inventory.dto.RapidDropPolicy(false, 70, 6, 5L);
         try (var client = java.net.http.HttpClient.newHttpClient()) {
-            putJson(context, client, "/api/v1/settings",
+            putJson(context, client, "/api/inventory/v1/settings",
                     "{" + globalPrefix + ",\"rapidDrop\":{\"enabled\":true,\"percent\":65,"
                             + "\"windowHours\":12,\"minimumDrop\":3}}", 200);
             // Global omission, explicit null, empty object and null members all retain values.
             for (String suffix : java.util.List.of("", ",\"rapidDrop\":null", ",\"rapidDrop\":{}",
                     ",\"rapidDrop\":{\"enabled\":null,\"percent\":null,\"windowHours\":null,\"minimumDrop\":null}")) {
-                putJson(context, client, "/api/v1/settings", "{" + globalPrefix + suffix + "}", 200);
+                putJson(context, client, "/api/inventory/v1/settings", "{" + globalPrefix + suffix + "}", 200);
                 assertEquals(globalPolicy, settings.get().rapidDrop());
             }
             putJson(context, client, policyPath,
@@ -297,8 +298,8 @@ class DatabaseStartupTest {
             var beforeProduct = products.get(product.id()).effectiveSettings().rapidDrop();
             for (String invalid : java.util.List.of("\"percent\":0", "\"percent\":101",
                     "\"windowHours\":0", "\"windowHours\":8761", "\"minimumDrop\":0", "\"minimumDrop\":-1")) {
-                for (String path : java.util.List.of("/api/v1/settings", policyPath)) {
-                    String prefix = path.equals("/api/v1/settings") ? globalPrefix + "," : "";
+                for (String path : java.util.List.of("/api/inventory/v1/settings", policyPath)) {
+                    String prefix = path.equals("/api/inventory/v1/settings") ? globalPrefix + "," : "";
                     String response = putJson(context, client, path,
                             "{" + prefix + "\"rapidDrop\":{" + invalid + "}}", 400);
                     var json = new com.fasterxml.jackson.databind.ObjectMapper().readTree(response);
@@ -307,6 +308,32 @@ class DatabaseStartupTest {
                     assertTrue(json.get("errors").has("rapidDrop." + field), response);
                     assertEquals(beforeGlobal, settings.get().rapidDrop());
                     assertEquals(beforeProduct, products.get(product.id()).effectiveSettings().rapidDrop());
+                }
+            }
+        }
+    }
+
+    private void verifyDocumentation(ConfigurableApplicationContext context) throws Exception {
+        int port = context.getEnvironment().getRequiredProperty("local.server.port", Integer.class);
+        try (var client = java.net.http.HttpClient.newBuilder()
+                .followRedirects(java.net.http.HttpClient.Redirect.NORMAL).build()) {
+            for (String path : java.util.List.of("/swagger-ui.html", "/swagger-ui/swagger-ui-bundle.js",
+                    "/v3/api-docs", "/v3/api-docs/swagger-config")) {
+                var request = java.net.http.HttpRequest.newBuilder(java.net.URI.create(
+                        "http://127.0.0.1:" + port + "/api/inventory" + path)).GET().build();
+                var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, response.statusCode(), path + ": " + response.body());
+                if (path.equals("/v3/api-docs/swagger-config")) {
+                    var json = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class)
+                            .readTree(response.body());
+                    assertTrue(json.path("tryItOutEnabled").asBoolean());
+                }
+                if (path.equals("/v3/api-docs")) {
+                    var json = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class)
+                            .readTree(response.body());
+                    assertEquals("Inventory Service API", json.path("info").path("title").asText());
+                    assertEquals("/api/inventory", json.path("servers").get(0).path("url").asText());
+                    assertTrue(json.path("paths").has("/v1/products"));
                 }
             }
         }

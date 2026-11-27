@@ -9,6 +9,9 @@ import org.sunnydineva.inventory.dto.StockMovementResponse;
 import org.sunnydineva.inventory.dto.StockPolicyRequest;
 import org.sunnydineva.inventory.dto.StockPolicyResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +32,9 @@ import jakarta.validation.Valid;
 import java.time.Instant;
 
 @RestController
-@RequestMapping("/api/v1/products")
+@RequestMapping("/v1/products")
 @Validated
+@Tag(name = "Products", description = "Product catalog, stock and stock policies")
 public class ProductController {
 
     private final ProductService productService;
@@ -42,6 +46,7 @@ public class ProductController {
     }
 
     @GetMapping
+    @Operation(summary = "List products")
     public Page<ProductResponse> list(@RequestParam(required = false) String search,
                                       @RequestParam(required = false) Boolean active,
                                       @RequestParam(required = false, name = "hasActiveAlert") Boolean hasActiveAlert,
@@ -50,6 +55,7 @@ public class ProductController {
     }
 
     @PostMapping
+    @Operation(summary = "Create product")
     public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductCreateRequest request,
                                                  @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         IdempotencyService.Result<ProductResponse> result = idempotencyService.execute(
@@ -59,16 +65,19 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Get product")
     public ProductResponse get(@PathVariable Long id) {
         return productService.get(id);
     }
 
     @PatchMapping("/{id}")
+    @Operation(summary = "Update product")
     public ProductResponse update(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
         return productService.update(id, request);
     }
 
     @PostMapping("/{id}/stock-adjustments")
+    @Operation(summary = "Adjust stock")
     public ResponseEntity<StockMovementResponse> adjustStock(@PathVariable Long id,
                                                             @Valid @RequestBody StockAdjustmentRequest request,
                                                             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
@@ -79,6 +88,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/stock-movements")
+    @Operation(summary = "List stock movements")
     public Page<StockMovementResponse> movements(@PathVariable Long id,
                                                 @RequestParam(required = false) Instant from,
                                                 @RequestParam(required = false) Instant to,
@@ -89,6 +99,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}/stock-policy")
+    @Operation(summary = "Update stock policy")
     public StockPolicyResponse updatePolicy(@PathVariable Long id, @Valid @RequestBody StockPolicyRequest request) {
         return productService.updatePolicy(id, request);
     }

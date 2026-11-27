@@ -42,6 +42,13 @@
         <artifactId>jackson-dataformat-csv</artifactId>
         <version>2.16.0</version>
       </dependency>
+      <!-- Confluent's schema-registry client brings an old 2.x annotations jar;
+           springdoc 3.x needs the 3.0.0 Webhook annotation. -->
+      <dependency>
+        <groupId>io.swagger.core.v3</groupId>
+        <artifactId>swagger-annotations</artifactId>
+        <version>3.0.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -57,6 +64,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+
+    <!-- OpenAPI / Swagger UI -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>3.2.1</version>
     </dependency>
 
     <!-- Database -->

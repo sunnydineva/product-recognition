@@ -13,5 +13,10 @@ ingress:
     path: ^/(api/yolo/(detect|track|track-video|names|health|products/(preview|approve|db-status/[^/]+)|camera/(status|start|stop|stream|ws))|api/products/(preview|approve|db-status/[^/]+)|yolo/(docs(/oauth2-redirect)?|openapi[.]json|redoc)|docs(/oauth2-redirect)?|openapi[.]json|redoc|detect|track|track-video|yolo-names|health|enroll([.]js)?|camera([.]js|/(status|start|stop|stream|ws))?)/?$
     service: http://127.0.0.1:18101
 
+  # Inventory REST API, OpenAPI JSON and Swagger UI.
+  - hostname: ai-product-recognition.my-expenses.xyz
+    path: ^/api/inventory(/.*)?$
+    service: http://127.0.0.1:8080
+
   # Fallback
   - service: http_status:404

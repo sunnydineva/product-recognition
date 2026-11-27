@@ -361,6 +361,9 @@ class IngressTests(unittest.TestCase):
         for path in ("/enroll", "/enroll.js", "/camera", "/camera.js", "/docs",
                      "/docs/oauth2-redirect", "/openapi.json", "/redoc"):
             self.assertEqual(route(path), "http://127.0.0.1:18101")
+        for path in ("/api/inventory/ui/", "/api/inventory/v1/products",
+                     "/api/inventory/v3/api-docs", "/api/inventory/swagger-ui/index.html"):
+            self.assertEqual(route(path), "http://127.0.0.1:8080")
         for path in ("/", "/anything", "/api/yolo/unknown", "/recognize/unknown",
                      "/api/recognition/unknown", "/api/yolo/detect/extra",
                      "/camera/ws/extra", "/api/products/preview/session", "/catalog/a/b/images",

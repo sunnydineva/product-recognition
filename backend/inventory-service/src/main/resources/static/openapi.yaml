@@ -2,9 +2,12 @@ openapi: 3.0.3
 info:
   title: Inventory Service API
   version: 1.0.0
-  description: Inventory REST API under /api/v1
+  description: Inventory REST API under /api/inventory/v1
+servers:
+  - url: /api/inventory
+    description: Inventory service (local or tunneled at /api/inventory)
 paths:
-  /api/v1/products:
+  /v1/products:
     get:
       summary: List products
       parameters:
@@ -40,7 +43,7 @@ paths:
       responses:
         '201':
           description: Created
-  /api/v1/products/{id}:
+  /v1/products/{id}:
     get:
       summary: Get product
       parameters:
@@ -71,7 +74,7 @@ paths:
       responses:
         '200':
           description: Updated
-  /api/v1/products/{id}/stock-adjustments:
+  /v1/products/{id}/stock-adjustments:
     post:
       summary: Adjust stock
       parameters:
@@ -88,7 +91,7 @@ paths:
       responses:
         '200':
           description: Movement
-  /api/v1/products/{id}/stock-movements:
+  /v1/products/{id}/stock-movements:
     get:
       summary: List stock movements
       parameters:
@@ -99,7 +102,7 @@ paths:
       responses:
         '200':
           description: Paged movements
-  /api/v1/products/{id}/stock-policy:
+  /v1/products/{id}/stock-policy:
     put:
       summary: Update stock policy
       parameters:
@@ -120,7 +123,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StockPolicyResponse'
-  /api/v1/settings:
+  /v1/settings:
     get:
       summary: Get global settings
       responses:
@@ -145,7 +148,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GlobalSettingsResponse'
-  /api/v1/alerts:
+  /v1/alerts:
     get:
       summary: List alerts
       responses:
@@ -160,7 +163,7 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/AlertResponse'
-  /api/v1/alerts/{id}/acknowledgement:
+  /v1/alerts/{id}/acknowledgement:
     post:
       summary: Acknowledge alert
       parameters:

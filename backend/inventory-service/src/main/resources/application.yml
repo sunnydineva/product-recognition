@@ -1,3 +1,7 @@
+server:
+  servlet:
+    context-path: /api/inventory
+
 spring:
   application:
     name: inventory-service
@@ -25,3 +29,11 @@ spring:
       properties:
         schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8087}
         specific.avro.reader: true
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    try-it-out-enabled: true

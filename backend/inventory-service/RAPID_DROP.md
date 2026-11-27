@@ -5,7 +5,7 @@ Defaults: enabled, **50%** net decline over **24 hours**, minimum absolute decli
 **1**. Percent is an integer 1–100, windowHours 1–8760, minimumDrop a positive
 signed 64-bit integer.
 
-Example `PUT /api/v1/settings`:
+Example `PUT /api/inventory/v1/settings`:
 
 ```json
 {
@@ -16,7 +16,7 @@ Example `PUT /api/v1/settings`:
 }
 ```
 
-Example `PUT /api/v1/products/123/stock-policy`:
+Example `PUT /api/inventory/v1/products/123/stock-policy`:
 
 ```json
 {
