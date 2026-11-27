@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="bg">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Контрол на наличностите</title>
+    <link rel="stylesheet" href="/api/inventory/ui/style.css">
+</head>
+<body>
+<header>
+    <h1>Контрол на наличностите</h1>
+    <nav aria-label="Навигация">
+        <a href="/camera">Камера</a> · <a href="/enroll">Добавяне чрез камера</a> ·
+        <a href="/api/inventory/swagger-ui.html">API документация</a>
+    </nav>
+</header>
+<aside>
+    <strong>Разпознаване ≠ складово движение.</strong>
+    Камерата показва изпращане към DINOv2 и резултат от разпознаване.
+    Kafka доставката и прилагането на AI събитията в inventory не са потвърдени в този екран.
+    „Приложено в inventory“ тук се показва само след успешен отговор за ръчна корекция.
+</aside>
+<main>
+    <section aria-labelledby="productsHeading">
+        <h2 id="productsHeading">Продукти</h2>
+        <form id="searchForm" class="toolbar">
+            <label>Търсене по име, SKU или баркод
+                <input id="search" type="search" maxlength="255">
+            </label>
+            <button type="submit">Търси</button>
+            <button id="refresh" type="button">Обнови</button>
+        </form>
+        <p id="productsStatus" role="status"></p>
+        <div class="scroll">
+            <table>
+                <caption>Канонични данни от inventory</caption>
+                <thead><tr><th>SKU</th><th>Име</th><th>Бележка</th><th>Наличност</th><th>Активен</th><th>Действие</th></tr></thead>
+                <tbody id="products"></tbody>
+            </table>
+        </div>
+        <div class="toolbar">
+            <button id="productsPrev" type="button" disabled>Предишни</button>
+            <span id="productsPage"></span>
+            <button id="productsNext" type="button" disabled>Следващи</button>
+        </div>
+    </section>
+    <section id="detail" aria-labelledby="selectedHeading" hidden>
+        <h2 id="selectedHeading" tabindex="-1"></h2>
+        <p id="selectedStock"></p>
+        <h3>Ръчна корекция</h3>
+        <p>Добавя или изважда бройки, не задава абсолютна наличност. Промяната се записва в историята.</p>
+        <form id="adjustForm">
+            <fieldset id="adjustFields">
+                <legend>Данни за корекцията</legend>
+                <label>Операция
+                    <select id="operation"><option value="INCREASE">Добави</option><option value="DECREASE">Извади</option></select>
+                </label>
+                <label>Брой <input id="quantity" type="number" min="1" max="2147483647" step="1" required></label>
+                <label>Бележка <input id="note" type="text" maxlength="2000"></label>
+                <button type="submit">Преглед и потвърждение</button>
+            </fieldset>
+        </form>
+    </section>
+    <section aria-labelledby="adjustmentHeading">
+        <h2 id="adjustmentHeading">Статус на ръчната корекция</h2>
+        <p id="adjustStatus" role="status">Няма изпратена корекция.</p>
+        <button id="retry" type="button" hidden>Повтори същата заявка безопасно</button>
+        <p id="pendingHelp" hidden>Резултатът е неизвестен. Нови корекции са блокирани.
+            Повторението използва същия Idempotency-Key, за да не се приложи движението повторно.
+            Незавършената заявка се пази в този браузърен таб; не го затваряйте до изясняване.</p>
+    </section>
+    <section id="historySection" aria-labelledby="historyHeading" hidden>
+        <h2 id="historyHeading">История на избрания продукт</h2>
+        <p id="historyStatus" role="status"></p>
+        <div class="scroll">
+            <table>
+                <thead><tr><th>ID</th><th>Час</th><th>Промяна</th><th>След движението</th><th>Източник</th><th>Бележка</th></tr></thead>
+                <tbody id="history"></tbody>
+            </table>
+        </div>
+        <div class="toolbar">
+            <button id="historyPrev" type="button" disabled>Предишни</button>
+            <span id="historyPage"></span>
+            <button id="historyNext" type="button" disabled>Следващи</button>
+        </div>
+    </section>
+</main>
+<script type="module" src="/api/inventory/ui/app.js"></script>
+</body>
+</html>

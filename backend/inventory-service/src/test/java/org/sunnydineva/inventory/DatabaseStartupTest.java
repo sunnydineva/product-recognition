@@ -318,7 +318,8 @@ class DatabaseStartupTest {
         try (var client = java.net.http.HttpClient.newBuilder()
                 .followRedirects(java.net.http.HttpClient.Redirect.NORMAL).build()) {
             for (String path : java.util.List.of("/swagger-ui.html", "/swagger-ui/swagger-ui-bundle.js",
-                    "/v3/api-docs", "/v3/api-docs/swagger-config")) {
+                    "/v3/api-docs", "/v3/api-docs/swagger-config",
+                    "/ui/", "/ui/index.html", "/ui/app.js", "/ui/core.js", "/ui/style.css")) {
                 var request = java.net.http.HttpRequest.newBuilder(java.net.URI.create(
                         "http://127.0.0.1:" + port + "/api/inventory" + path)).GET().build();
                 var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
